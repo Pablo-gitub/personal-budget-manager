@@ -24,7 +24,7 @@ public class TestJson {
         } else {
             System.out.println("controllo fallito");
         }
-        if (prova.userPasswordCheck("GNIPNI58B03E289A","cara")==true) {
+        /*if (prova.userPasswordCheck("GNIPNI58B03E289A","cara")==true) {
             System.out.println("utente password corretti");
             System.out.println("controllo riuscito");
         } else {
@@ -60,7 +60,7 @@ public class TestJson {
         for(int i=0; i<transaction.length; i++) {
             System.out.println(transaction[i].getDate());
         }
-        /*System.out.println("nuovo conto");
+        System.out.println("nuovo conto");
         prova.newBanckAccount("jedy","STAR BANK");
         System.out.println("altro nuovo conto");
         prova.newBanckAccount("jedy","banca dei ribelli");
