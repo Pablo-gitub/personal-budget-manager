@@ -3,6 +3,8 @@ package main.charts;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
+
 import main.json.TransactionJson;
 import javafx.scene.chart.AreaChart;
 import javafx.scene.chart.CategoryAxis;
@@ -110,6 +112,55 @@ public class LineChartBuilder {
         //Setting the name to the line (series)
         series1.setName("Guadagni (" + entrate + "$)");
         series2.setName("Spese (" + uscite + "$)");
+        //Setting the data to Line chart
+        areaChart.getData().addAll(series1, series2);
+        
+        return areaChart;
+    }
+    
+    public static AreaChart<String, Number> areaChartBuilderList(final List<main.jsonfile.TransactionJson> transactions, final String sDate1, final String sDate2) throws ParseException {
+        
+        Date date1 = new SimpleDateFormat("dd/MM/yyyy HH:mm").parse(sDate1);
+        Date date2 = new SimpleDateFormat("dd/MM/yyyy HH:mm").parse(sDate2);  
+        
+        //Defining the x an y axes
+        CategoryAxis xAxis = new CategoryAxis();
+        NumberAxis yAxis = new NumberAxis();
+        //Setting labels for the axes
+        xAxis.setLabel("Date");
+        yAxis.setLabel("Transaction");
+        //Creating a line chart
+        AreaChart<String, Number> areaChart = new AreaChart<String, Number>(xAxis, yAxis);
+        areaChart.setTitle("Transaction durin " + sDate1 + "-" + sDate2); 
+        //Preparing the data points for the line1
+        XYChart.Series series1 = new XYChart.Series();
+        XYChart.Series series2 = new XYChart.Series();
+        
+        series1.getData().clear();
+        series2.getData().clear();
+        double uscite = 0;
+        double entrate = 0;
+        
+        
+        for(final main.jsonfile.TransactionJson transaction : transactions) {
+            final Date dateTrans = new SimpleDateFormat("dd/MM/yyyy").parse(transaction.getDate());
+            
+            if(dateTrans.after(date1) && dateTrans.before(date2)) {
+                if(transaction.getAmount() < 0) {
+                    uscite += -1*transaction.getAmount();
+                    series2.getData().add(new XYChart.Data(transaction.getDate(), uscite));
+                    series1.getData().add(new XYChart.Data(transaction.getDate(), entrate));
+                } else {
+                    entrate += transaction.getAmount();
+                    series1.getData().add(new XYChart.Data(transaction.getDate(), entrate));
+                    series2.getData().add(new XYChart.Data(transaction.getDate(), uscite));
+                }
+            } 
+        }
+            
+        //Setting the name to the line (series)
+        series1.setName("Guadagni (" + entrate + "€)");
+        series2.setName("Spese (" + uscite + "€)");
         //Setting the data to Line chart
         areaChart.getData().addAll(series1, series2);
         

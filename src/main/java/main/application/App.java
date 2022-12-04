@@ -28,7 +28,7 @@ public final class App {
             System.out.println("test 0");
             prova.initializeJsonFile();
         }
-        Test.testing();
+        //Test.testing();
         Application.launch(JavaFxView.class, args);
 
     }

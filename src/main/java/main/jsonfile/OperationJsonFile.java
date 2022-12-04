@@ -34,7 +34,7 @@ public class OperationJsonFile {
 
     }
 
-    private void writeJsonFile(final JSONArray text) {
+    private static void writeJsonFile(final JSONArray text) {
         try {
             // Writing to a file
             final File file = new File(dbName);
@@ -76,7 +76,7 @@ public class OperationJsonFile {
      * 
      * */
 	
-    public boolean userExist(final String username) {
+    public static boolean userExist(final String username) {
         final JSONParser parser = new JSONParser();
 
         try {
@@ -98,7 +98,7 @@ public class OperationJsonFile {
         }
     }
 
-    private boolean userAccountExist(final String username, final String nameaccount, final int i) {
+    private static boolean userAccountExist(final String username, final String nameaccount, final int i) {
 
     	final JSONParser parser = new JSONParser();
         final String[] moneyAccounts = {"banckAccounts", "moneyBoxes", "InvestimentAccounts"};
@@ -131,7 +131,7 @@ public class OperationJsonFile {
 		return false;
     }
 
-    private boolean userAccountAssetExist(final String username, final String nameInvestimentAccount, final String symbolAsset) {
+    private static boolean userAccountAssetExist(final String username, final String nameInvestimentAccount, final String symbolAsset) {
     	final JSONParser parser = new JSONParser();
 
         try {
@@ -170,7 +170,7 @@ public class OperationJsonFile {
 		return false;
     }
 
-    public final boolean userPasswordCheck(final String username, final String password) {
+    public static final boolean userPasswordCheck(final String username, final String password) {
         final JSONParser parser = new JSONParser();
 
         try {
@@ -248,7 +248,7 @@ public class OperationJsonFile {
      * */
 
     @SuppressWarnings("unchecked")
-    public void initializeUser(final String name, final String lastName, final String username, final String email, final String password) {
+    public static void initializeUser(final String name, final String lastName, final String username, final String email, final String password) {
         final JSONParser parser = new JSONParser();
 
         if (!userExist(username)) {
@@ -287,7 +287,7 @@ public class OperationJsonFile {
      * 
      * */
     @SuppressWarnings("unchecked")
-    public void newAccount(final String username, final String nameAccount, final int type) {
+    public static void newAccount(final String username, final String nameAccount, final int type) {
         int i = type;
     	if (i > 2) {
     	    i = 2;
@@ -344,7 +344,7 @@ public class OperationJsonFile {
      * 
      * */
     @SuppressWarnings("unchecked")
-    public void newAsset(final String username, final String nameInvestimentAccount, final String symbolAsset, final String nameAsset) {
+    public static void newAsset(final String username, final String nameInvestimentAccount, final String symbolAsset, final String nameAsset) {
         final JSONParser parser = new JSONParser();
 
         if (!userAccountAssetExist(username, nameInvestimentAccount, symbolAsset)) {
@@ -396,7 +396,7 @@ public class OperationJsonFile {
      * 
      * */
     @SuppressWarnings("unchecked")
-    public void newTransaction(final String username, final String nameAccountTransaction, final String nameTransaction, 
+    public static void newTransaction(final String username, final String nameAccountTransaction, final String nameTransaction, 
             final double amount, final String date, final String time) {
         final JSONParser parser = new JSONParser();
 
@@ -453,7 +453,7 @@ public class OperationJsonFile {
      * */
 
     @SuppressWarnings("unchecked")
-    public void newTransaction(final String username, final String nameAccountTransaction, final String nameTransaction, 
+    public static void newTransaction(final String username, final String nameAccountTransaction, final String nameTransaction, 
             final String symbolAsset, final double amount, final String date, final String time) {
 
         final JSONParser parser = new JSONParser();
@@ -508,7 +508,7 @@ public class OperationJsonFile {
      * */
 
     @SuppressWarnings("unchecked")
-    public void newTransactionAsset(final String username, final String nameAccountTransaction, 
+    public static void newTransactionAsset(final String username, final String nameAccountTransaction, 
             final String nameTransaction, final String symbolAsset, final double amount,
             final String date, final String time) {
 
@@ -687,7 +687,7 @@ public class OperationJsonFile {
         return listAssetsTransactions;
     }*/
 
-    public List<AssetJson> readAssetsTransactions(final String username, final String nameInvestimentAccount) {
+    public static List<AssetJson> readAssetsTransactions(final String username, final String nameInvestimentAccount) {
         final List<AssetJson> listAssetsTransactions = new ArrayList<>(); 
         final JSONParser parser = new JSONParser();
 
@@ -738,7 +738,7 @@ public class OperationJsonFile {
         return listAssetsTransactions;
     }
 
-    public final List<InvestmentAccountJson> readInvestmentAccount(final String username) {
+    public final static List<InvestmentAccountJson> readInvestmentAccount(final String username) {
         final List<InvestmentAccountJson> listInvestmentAccount = new ArrayList<>(); 
         final JSONParser parser = new JSONParser();
 
@@ -845,7 +845,7 @@ public class OperationJsonFile {
      * */
 
 
-	public List<TransactionJson> readMoneyBoxTransaction(final String username, final String nameMoneyBox) {
+	public static List<TransactionJson> readMoneyBoxTransaction(final String username, final String nameMoneyBox) {
 	    final List<TransactionJson> listTransactions = new ArrayList<>();
 	    final JSONParser parser = new JSONParser();
 
@@ -885,7 +885,7 @@ public class OperationJsonFile {
         return listTransactions;
     }
 
-    public final List<MoneyboxAccountJson> readMoneyBoxes(final String username) {
+    public final static List<MoneyboxAccountJson> readMoneyBoxes(final String username) {
         final List<MoneyboxAccountJson> listMoneyboxes = new ArrayList<>();
         final JSONParser parser = new JSONParser();
 
@@ -926,7 +926,7 @@ public class OperationJsonFile {
      * @param nameBanckAccount the name of the bank account we want to read the transactions
      * @return the transactions related to a nameBankAccount
      * */
-	public List<TransactionJson> readBankTransaction(final String username, final String nameBanckAccount) {
+	public static List<TransactionJson> readBankTransaction(final String username, final String nameBanckAccount) {
 	    final List<TransactionJson> listTransactions = new ArrayList<>();
 	    final JSONParser parser = new JSONParser();
 
@@ -965,7 +965,7 @@ public class OperationJsonFile {
         return listTransactions;
     }
 
-    public final List<BankAccountJson> readBanks(final String username) {
+    public final static List<BankAccountJson> readBanks(final String username) {
         final List<BankAccountJson> listBanks = new ArrayList<>();
         final JSONParser parser = new JSONParser();
 
@@ -1017,7 +1017,7 @@ public class OperationJsonFile {
         return totalAmount;
     }
 
-    public final User readUser(final String username) {
+    public final static User readUser(final String username) {
         final JSONParser parser = new JSONParser();
         String name = null;
         String lastname = null;
@@ -1053,6 +1053,42 @@ public class OperationJsonFile {
             }
         }
         return new User(name, lastname, email, username, password, banks, moneyboxes, investmentAccounts);
+    }
+    
+    public final static List<User> readUsers() {
+        final JSONParser parser = new JSONParser();
+        String name = null;
+        String lastname = null;
+        String email = null;
+        String username = null;
+        String password = null;
+        List<BankAccountJson> banks = null;
+        List<MoneyboxAccountJson> moneyboxes = null;
+        List<InvestmentAccountJson> investmentAccounts = null;
+        List<User> usersList = new ArrayList<>();
+
+        try {
+            // create jsonArray from file
+            final JSONArray users = (JSONArray) parser.parse(new FileReader(dbName));
+            // read user
+            for (final Object user : users) {
+                final JSONObject person = (JSONObject) user;
+                name = (String) person.get("name");
+                lastname = (String) person.get("lastName");
+                email = (String) person.get("email");
+                username = (String) person.get("username");
+                password = (String) person.get("password");
+                banks = readBanks(username);
+                moneyboxes = readMoneyBoxes(username);
+                investmentAccounts = readInvestmentAccount(username);
+                usersList.add(new User(name, lastname, email, username, password, banks, moneyboxes, investmentAccounts));
+
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        
+        return usersList;
     }
 
     /**
