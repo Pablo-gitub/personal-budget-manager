@@ -266,23 +266,18 @@ And by thinking that, I used most of my 80 hours to make it easier for the other
 		\paragraph{Problem:}Since I've start to think about this project,  about the profiles, the operations, I thought we need to save and manage data. 
 		\paragraph{Solution:}Toghether with the team we chose to use json, in a local file, for write and read users data. For this reason I spend most of my time more than 10 days writing a class for do that easily.
 		\\
-		I've chose to desingne the json structure in this way:
-		\\
-		User (name, lastName,  email, username, password, );
-		\\
-		The username it want to be the unique identifier of the user in our program corresponds to the fc (fiscal code)
-        \\
-		Each user has also BankAccounts[], MoneyBox[], InvestmentAccount[];
-		\\
-		BankAccount is identified with a name and it has transactions[], transaction (nameTransaction, amount, date, time);
-		
-		Alike BankAccount also MoneyBox has a name to identify it and it's transactions, otherwise to bank account MoneyBox transactions has also a field currency because I want to give the possibility to the user to use money box even for the assets and make it currency freedom.
-		
-		Also InvestimentAccount has a name to identify it, than it  has Assets[];
-		
-		Asset(nameAsset, symbolAsset), symbolAsset is the identifier "ETH" "BTC" "AAPL",each Asset has also it's transaction alike the bankAccount transaction(nameTrnasaction, amount, date, time)
-		
-		I apologize, I've couldn't be able to designe a UML in time for the delivery
+		\begin{figure}[H]
+                \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{img/OperationJsonFile.png}}%
+                \caption{ER representation of the JSON file}
+                \label{fig:my_label}
+            \end{figure}
+            \begin{figure}[H]
+                \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{img/OperationJsonFileClass (1).png}}%
+                \caption{these classes are used for operate on Json file}
+                \label{fig:my_label}
+            \end{figure}
+
+
 
 	\subsubsection{ExpenditureScene}
 	Problem: how to show user he's transaction, and how much he spend?
@@ -317,10 +312,8 @@ I tested the correct initialization of a profile and the correct change of the p
 \end{itemize}
 
 \subsection{Paolo Pietrelli}
-I lack of testing, at the beginning I build some test, in a the class TestJson and I call it in the class App.
-But unfortunatly in some recent commit two/three days ago something went wrong and I couldn't be able to read the file json anymore (until the commit `utente.json come back` it keep to read the file and do the operation).
-
-So I've chose to use my time not for a failure tetsing but for show how the data showld be appear 
+I tested my program using it and assuring me that everything was working as I expected, checking the JSON file and the output on screen.
+I thought that a test could not work as I expected, because I couldn't test each method singularly, because for test the writing on json file I should then read it, and for test the reading I should before write, that mean that for test one method even the other has to work as well.
 
 \section{Metodologia di lavoro}
 \subsection{Zhaohui Song}
