@@ -54,8 +54,8 @@ public class OperationJsonFile {
 
         try {
             // create jsonArray from file
-            final OperationJsonFile app = new OperationJsonFile();
-            final InputStream is = app.getFileFromResourceAsStream(fileName);
+            //final OperationJsonFile app = new OperationJsonFile();
+            final InputStream is = getFileFromResourceAsStream(fileName);
             final JSONArray users = (JSONArray) parser.parse(new InputStreamReader(is, "UTF-8"));
             // Writing to a file
             writeJsonFile(users);
