@@ -33,6 +33,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.collections.ObservableList;
 import main.charts.LineChartBuilder;
 import main.charts.PieChartBuilder;
 import main.charts.TestChart;
@@ -72,6 +73,9 @@ public class ExpenditureScene extends BaseScene{
     private int set = 0;
     private int setnewUser = 0;
     private static final DateTimeFormatter DATATIME = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    final DateTimePicker startDate = new DateTimePicker();
+    final DateTimePicker endDate = new DateTimePicker();
+    final ChoiceBox<String> assetChooser = new ChoiceBox<>();
 
     public ExpenditureScene(final BorderPane root, final Stage primaryStage, final Controller controller) {
         super(primaryStage, controller);
@@ -91,10 +95,8 @@ public class ExpenditureScene extends BaseScene{
     public Scene getScene() {
         return this.scene;
     }
-
-    @Override
-    protected void updateTop() {
-        final Pane topLayout = getGadgets().createVerticalPanel();
+    
+    private HBox createUserSelection() {
         final ChoiceBox<String> choiceUser = new ChoiceBox<>();
         for (final User user : users) {
             choiceUser.getItems().add(user.getUsername());
@@ -104,6 +106,39 @@ public class ExpenditureScene extends BaseScene{
         final Text userSelection = new Text();
         userSelection.setFont(Font.font("Arial", FontWeight.BOLD, 15));
         userSelection.setText("seleziona utente");
+        access.setOnAction(event -> {
+            if (OperationJsonFile.userPasswordCheck((String) choiceUser.getValue(), password.getText())) {
+                Platform.runLater(() -> {
+                    accountName.getItems().clear();
+                    accountNameTable.getItems().clear();
+                    final String selectedUserName = (String) choiceUser.getValue();
+                    selectedUser = OperationJsonFile.readUser(selectedUserName);
+                    if (selectedUser != null) {
+                        for (final BankAccountJson bank: selectedUser.getBanks()) {
+                            accountName.getItems().add(bank.getName());
+                            accountNameTable.getItems().add(bank.getName());
+                        }
+                        for (final MoneyboxAccountJson box: selectedUser.getMoneyboxes()) {
+                            accountNameTable.getItems().add(box.getName());
+                        }
+                        for (final InvestmentAccountJson inv: selectedUser.getInvestmentAccounts()) {
+                            accountNameTable.getItems().add(inv.getNameInvestmentAccount());
+                        }
+                    }
+                    updateBottom();
+                });
+            } else {
+                accountName.getItems().clear();
+                accountNameTable.getItems().clear();
+                transactionChart.clear();
+                transactionTable.clear();
+                setnewUser = 0;
+            }
+        });
+        return new HBox(userSelection, choiceUser, password, access);
+    }
+    
+    private HBox createNewUser() {
         final Text newUser = new Text();
         newUser.setFont(Font.font("Arial", FontWeight.BOLD, 15));
         newUser.setText("Nuovo utente");
@@ -114,20 +149,34 @@ public class ExpenditureScene extends BaseScene{
         final TextField passwordUser = new TextField("Password");
         final Button addUser = new Button("Aggiungi");
         final Button newUserButton = new Button("Nuovo Utente");
-        final HBox userChoise = new HBox(userSelection, choiceUser, password, access);
-        HBox userNew = null;
+        HBox userNew = new HBox(newUserButton);
+        
         newUserButton.setOnAction(event -> {
             setnewUser = 1;
             updateTop();
         });
+        
         if (setnewUser == 1) {
             userNew = new HBox(newUser, nameUser, lastnameUser, fiscalcodeUser, emailUser, passwordUser, addUser);
         } else {
             userNew = new HBox(newUserButton);
         }
-        final Text newAccount = new Text();
-        newAccount.setFont(Font.font("Arial", FontWeight.BOLD, 15));
-        newAccount.setText("Apri nuovo conto");
+        
+        addUser.setOnAction(event -> {
+            Platform.runLater(() -> {
+                OperationJsonFile.initializeUser(nameUser.getText(), lastnameUser.getText(), 
+                        fiscalcodeUser.getText(), emailUser.getText(), passwordUser.getText());
+                users = OperationJsonFile.readUsers();
+                setnewUser = 0;
+                updateTop();
+                updateBottom();
+            });
+        });
+        
+        return userNew;
+    }
+    
+    private HBox addNewUser() {
         final ChoiceBox<String> typeOfTheNewAccount = new ChoiceBox<>();
         typeOfTheNewAccount.getItems().add("Bancario");
         typeOfTheNewAccount.getItems().add("Salvadanaio");
@@ -135,68 +184,38 @@ public class ExpenditureScene extends BaseScene{
         final TextField nameAccount = new TextField("Nome Conto");
         final Button add = new Button("Aggiungi");
         final HBox addingAccount = new HBox(typeOfTheNewAccount, nameAccount, add);
-        access.setOnAction(event -> {
-            if (OperationJsonFile.userPasswordCheck((String) choiceUser.getValue(), password.getText())) {
-                accountName.getItems().clear();
-                accountNameTable.getItems().clear();
-                final String selectedUserName = (String) choiceUser.getValue();
-                selectedUser = OperationJsonFile.readUser(selectedUserName);
-                if (selectedUser != null) {
-                    for (final BankAccountJson bank: selectedUser.getBanks()) {
-                        accountName.getItems().add(bank.getName());
-                        accountNameTable.getItems().add(bank.getName());
-                    }
-                    for (final MoneyboxAccountJson box: selectedUser.getMoneyboxes()) {
-                        accountNameTable.getItems().add(box.getName());
-                    }
-                    for (final InvestmentAccountJson inv: selectedUser.getInvestmentAccounts()) {
-                        accountNameTable.getItems().add(inv.getNameInvestmentAccount());
-                    }
-                }
-                updateBottom();
-            } else {
-                accountName.getItems().clear();
-                accountNameTable.getItems().clear();
-                transactionChart.clear();
-                transactionTable.clear();
-            }
-        });
         
         add.setOnAction(event -> {
-            if (typeOfTheNewAccount.getValue().equals("Bancario")) {
-                OperationJsonFile.newAccount(selectedUser.getUsername(), nameAccount.getText(), 0);
-            } else if (typeOfTheNewAccount.getValue().equals("Salvadanaio")) {
-                OperationJsonFile.newAccount(selectedUser.getUsername(), nameAccount.getText(), 1);
-            } else if (typeOfTheNewAccount.getValue().equals("Investimento")) {
-                OperationJsonFile.newAccount(selectedUser.getUsername(), nameAccount.getText(), 2);
-            }
-            updateBottom();
+            Platform.runLater(() -> {
+                if (typeOfTheNewAccount.getValue().equals("Bancario")) {
+                    OperationJsonFile.newAccount(selectedUser.getUsername(), nameAccount.getText(), 0);
+                } else if (typeOfTheNewAccount.getValue().equals("Salvadanaio")) {
+                    OperationJsonFile.newAccount(selectedUser.getUsername(), nameAccount.getText(), 1);
+                } else if (typeOfTheNewAccount.getValue().equals("Investimento")) {
+                    OperationJsonFile.newAccount(selectedUser.getUsername(), nameAccount.getText(), 2);
+                }
+                updateBottom();
+            });
         });
         
-        addUser.setOnAction(event -> {
-            OperationJsonFile.initializeUser(nameUser.getText(), lastnameUser.getText(), 
-                    fiscalcodeUser.getText(), emailUser.getText(), passwordUser.getText());
-            users = OperationJsonFile.readUsers();
-            setnewUser = 0;
-            updateTop();
-            updateBottom();
-        });
-        topLayout.getChildren().addAll(super.getMenuBar(), userChoise, userNew, newAccount, addingAccount);
-        this.root.setTop(topLayout);
+        return addingAccount;
     }
 
     @Override
-    protected void updateBottom() {
-        // selecting user
-        /*final ChoiceBox<String> choiceUser = new ChoiceBox<>();
-        for (final User user : users) {
-            choiceUser.getItems().add(user.getUsername());
-        }
-        final HBox userChoise = new HBox(choiceUser);*/
-        
-        //selecting type
-        
-        
+    protected void updateTop() {
+        final Pane topLayout = getGadgets().createVerticalPanel();
+        final HBox userChoise = createUserSelection();
+        final HBox userNew = createNewUser();
+        final HBox addUser = addNewUser();
+        final Text newAccount = new Text();
+        newAccount.setFont(Font.font("Arial", FontWeight.BOLD, 15));
+        newAccount.setText("Apri nuovo conto");
+
+        topLayout.getChildren().addAll(super.getMenuBar(), userChoise, userNew, newAccount, addUser);
+        this.root.setTop(topLayout);
+    }
+    
+    private HBox createAccountSelectionUI() {
         final HBox accountType = new HBox(accountName);
         final HBox accountTypeTable = new HBox(accountNameTable);
         accountName.setOnAction((event) -> {
@@ -206,8 +225,8 @@ public class ExpenditureScene extends BaseScene{
                 if (selectedAccount.equals(bank.getName())) {
                     transactionChart = bank.getTransactions();
                     bankName = selectedAccount;
-                    updateCenter();
-                    updateLeft();
+                    Platform.runLater(() -> updateCenter());
+                    Platform.runLater(() -> updateLeft());
                 }
             }
         });
@@ -220,14 +239,14 @@ public class ExpenditureScene extends BaseScene{
                     type = 1;
                     transactionTable = bank.getTransactions();
                     bankName = selectedAccount;
-                    updateRight();
+                    Platform.runLater(() -> updateRight());
                 }
             }
             for (final MoneyboxAccountJson box: selectedUser.getMoneyboxes()) {
                 if (selectedAccount.equals(box.getName())) {
                     type = 2;
                     transactionTable = box.getTransactions();
-                    updateRight();
+                    Platform.runLater(() -> updateRight());
                 }
             }
             for (final InvestmentAccountJson inv: selectedUser.getInvestmentAccounts()) {
@@ -236,29 +255,46 @@ public class ExpenditureScene extends BaseScene{
                     type = 3;
                     for (final AssetJson asset : inv.getAssets()) {
                         transactionTable.addAll(asset.getTransactions());
-                        updateRight();
+                        Platform.runLater(() -> updateRight());
                     }
                 }
             }
         });
+        
+        return new HBox(accountType, accountTypeTable);
+    }
+    
+    private HBox createDateSelectionUI() {
+        this.firstDate = startDate.getDateTimeValue().format(DATATIME);
+        this.secondDate = endDate.getDateTimeValue().format(DATATIME);
+        final HBox dates = new HBox(startDate, endDate);
+        dates.setMaxWidth(300);
+        return dates;
+    }
+
+    private Button createShowButton() {
         final Button button = new Button("Show");
-        //final TextField startDate = new TextField("01/01/2022 00:00");
-        //final TextField endDate = new TextField("31/12/2022 23:59");
-        final DateTimePicker startDate = new DateTimePicker();
-        final DateTimePicker endDate = new DateTimePicker();
-        firstDate = startDate.getDateTimeValue().format(DATATIME);
-        secondDate = endDate.getDateTimeValue().format(DATATIME);
+        
         button.setOnAction(event -> {
             firstDate = startDate.getDateTimeValue().format(DATATIME);
             secondDate = endDate.getDateTimeValue().format(DATATIME);
-            updateCenter();
-            updateLeft();
-            updateRight();
+            Platform.runLater(() -> {
+                updateCenter();
+                updateLeft();
+                updateRight();
+            });
         });
-        final HBox dates = new HBox(startDate, endDate);
-        dates.setMaxWidth(300);
+        
+        return button;
+    }
+    
+    @Override
+    protected void updateBottom() {
+        final HBox accountSelection = createAccountSelectionUI();
+        final HBox dates = createDateSelectionUI();
+        final Button button = createShowButton();
         final Pane bottomLayout = getGadgets().createHorizontalPanel();
-        bottomLayout.getChildren().addAll(/*userChoise,*/ accountType, accountTypeTable, dates, button);
+        bottomLayout.getChildren().addAll(accountSelection, dates, button);
         this.root.setBottom(bottomLayout);
     }
     
@@ -281,17 +317,16 @@ public class ExpenditureScene extends BaseScene{
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        
-        //Creating a stack pane to hold the chart
-        final StackPane pane = new StackPane(pie);
-        pane.setPadding(new Insets(15, 15, 15, 15));
-        pane.setStyle("-fx-background-color: BEIGE");
-        
-
-        final Pane centerLayout = getGadgets().createVerticalPanel();
-        
-        centerLayout.getChildren().addAll(pie);
-        this.root.setCenter(centerLayout);
+        final PieChart finalPie = pie;
+        Platform.runLater(() -> {
+            //Creating a stack pane to hold the chart
+            final StackPane pane = new StackPane(finalPie);
+            pane.setPadding(new Insets(15, 15, 15, 15));
+            pane.setStyle("-fx-background-color: BEIGE");
+            final Pane centerLayout = getGadgets().createVerticalPanel();
+            centerLayout.getChildren().addAll(finalPie);
+            this.root.setCenter(centerLayout);
+        });
     }
     
     /**
@@ -301,8 +336,8 @@ public class ExpenditureScene extends BaseScene{
     @Override
     protected void updateLeft() {
         final Pane leftLayout = getGadgets().createVerticalPanel();
-        
         AreaChart<String, Number> area = null;
+        
         try {
             //once reading json will be fixed we can call a get-Transaction method and put it into the first element
             //once set button on the view for chose date start and date end we will be able to see the asked data
@@ -312,184 +347,166 @@ public class ExpenditureScene extends BaseScene{
             e.printStackTrace();
         }
         
-        //Creating a stack pane to hold the chart
-        final StackPane pane = new StackPane(area);
-        pane.setPadding(new Insets(15, 15, 15, 15));
-        pane.setStyle("-fx-background-color: BEIGE");
+        final AreaChart<String, Number> finalArea = area; 
         
-        final Text amountResidue = new Text();
-        amountResidue.setFont(Font.font("Arial", FontWeight.BOLD, 20));
-        for (final BankAccountJson bank : selectedUser.getBanks()) {
-            if (bankName.equals(bank.getName())) {
-                amountResidue.setText(bankName + " saldo attuale " + bank.getTotalAmount());
+        Platform.runLater(() -> {
+            //Creating a stack pane to hold the chart
+            final StackPane pane = new StackPane(finalArea);
+            pane.setPadding(new Insets(15, 15, 15, 15));
+            pane.setStyle("-fx-background-color: BEIGE");
+            final Text amountResidue = new Text();
+            amountResidue.setFont(Font.font("Arial", FontWeight.BOLD, 20));
+            
+            for (final BankAccountJson bank : selectedUser.getBanks()) {
+                if (bankName.equals(bank.getName())) {
+                    amountResidue.setText(bankName + " saldo attuale " + bank.getTotalAmount());
+                }
             }
-        }
-        /*final Text newAccount = new Text();
-        newAccount.setFont(Font.font("Arial", FontWeight.BOLD, 15));
-        newAccount.setText("Apri nuovo conto");
-        final ChoiceBox<String> typeOfTheNewAccount = new ChoiceBox<>();
-        typeOfTheNewAccount.getItems().add("Bancario");
-        typeOfTheNewAccount.getItems().add("Salvadanaio");
-        typeOfTheNewAccount.getItems().add("Investimento");
-        final TextField nameAccount = new TextField("Nome Conto");
-        final Button add = new Button("Aggiungi");
-        final HBox addingAccount = new HBox(typeOfTheNewAccount, nameAccount, add);
-        add.setOnAction(event -> {
-            if (typeOfTheNewAccount.getValue().equals("Bancario")) {
-                OperationJsonFile.newAccount(selectedUser.getUsername(), nameAccount.getText(), 0);
-            } else if (typeOfTheNewAccount.getValue().equals("Salvadanaio")) {
-                OperationJsonFile.newAccount(selectedUser.getUsername(), nameAccount.getText(), 1);
-            } else if (typeOfTheNewAccount.getValue().equals("Investimento")) {
-                OperationJsonFile.newAccount(selectedUser.getUsername(), nameAccount.getText(), 2);
-            }
-            updateBottom();
-        });*/
-        
-        leftLayout.getChildren().addAll(area, amountResidue/*, newAccount, addingAccount*/);
-        this.root.setLeft(leftLayout);
+            
+            leftLayout.getChildren().addAll(finalArea, amountResidue/*, newAccount, addingAccount*/);
+            this.root.setLeft(leftLayout);
+        });
     }
     
     /**
      * Here I set the right side of the screen with the table view
      * */
+    private void performBankTransaction(String nameTransaction, double amount, String datetime) {
+        OperationJsonFile.newTransaction(selectedUser.getUsername(), tableName, nameTransaction, amount, datetime.substring(0, 10), datetime.substring(11));
+        updateTransactionTables();
+    }
 
-    @Override
-    protected void updateRight() {
-        
-        final Text text = new Text();
-        text.setText(tableName);
-        text.setFont(Font.font("Arial", FontWeight.BOLD, 20));
-        
-        final Pane rightLayout = getGadgets().createVerticalPanel();
+    private void performMoneyboxTransaction(String nameTransaction, String currency, double amount, String datetime) {
+        OperationJsonFile.newTransaction(selectedUser.getUsername(), tableName, nameTransaction, currency, amount, datetime.substring(0, 10), datetime.substring(11));
+        updateTransactionTables();
+    }
 
-        TableView<main.jsonfile.TransactionJson> tableView = null;
-        try {
-            //once reading json will be fixed we can call a get-Transaction method and put it into the first element
-            //once set button on the view for chose date start and date end we will be able to see the asked data
-            tableView = TableBuilder.buildTableList(transactionTable, firstDate, secondDate);
-        } catch (ParseException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+    private void performAssetTransaction(String nameTransaction, String assetName, double amount, String datetime) {
+        OperationJsonFile.newTransactionAsset(selectedUser.getUsername(), tableName, nameTransaction, assetName, amount, datetime.substring(0, 10), datetime.substring(11));
+        updateTransactionTables();
+    }
+
+    private void updateTransactionTables() {
+        selectedUser = OperationJsonFile.readUser(selectedUser.getUsername());
+        for (final BankAccountJson bank : selectedUser.getBanks()) {
+            if (tableName.equals(bank.getName())) {
+                transactionTable = bank.getTransactions();
+            }
+            if (bankName.equals(bank.getName())) {
+                transactionChart = bank.getTransactions();
+            }
         }
+    }
+
+    private void performAssetCreationAndTransaction(String assetName, String symbol, String nameTransaction, double amount, String datetime) {
+        OperationJsonFile.newAsset(selectedUser.getUsername(), tableName, assetName, symbol);
+        performAssetTransaction(nameTransaction, symbol, amount, datetime);
+    }
+
+    private TableView<main.jsonfile.TransactionJson> createTransactionTableView() {
+        try {
+            return TableBuilder.buildTableList(transactionTable, firstDate, secondDate);
+        } catch (ParseException e) {
+            e.printStackTrace();
+            return new TableView<>(); // Handle the exception gracefully in your application
+        }
+    }
+    
+    private Button createAddAssetButton() {
         Button addAsset = null;
-        final ChoiceBox<String> assetChoiser = new ChoiceBox<>();
+        assetChooser.getItems().clear();
         for (final InvestmentAccountJson inv: selectedUser.getInvestmentAccounts()) {
-            assetChoiser.getItems().clear();
             if (tableName.equals(inv.getNameInvestmentAccount())) {
                 for (final AssetJson asset : inv.getAssets()) {
-                    assetChoiser.getItems().add(asset.getAssetSymbol());
+                    assetChooser.getItems().add(asset.getAssetSymbol());
                 }
                 addAsset = new Button("Aggiungi Asset");
             }
         }
-        
-
+        return addAsset;
+    }
+    
+    private HBox createTableButtons(Button addAssetButton) {
         final TextField name = new TextField("nome transazione");
-        //final TextField importo = new TextField("importo");
         final NumberTextField importo = new NumberTextField();
-        final TextField currency = new TextField("valuta");
+        final TextField currencyValue = new TextField("valuta");
         final TextField nameNewAsset = new TextField("Nome asset");
         final TextField symbolNewAsset = new TextField("simbolo asset");
-        //final TextField date = new TextField("01/01/2022");
-        //final TextField time = new TextField("00:00");
         final Button button = new Button("Aggiungi");
         name.setMaxWidth(200);
         importo.setMaxWidth(100);
-        currency.setMaxWidth(100);
-        //date.setMaxWidth(100);
-        //time.setMaxWidth(100);
+        currencyValue.setMaxWidth(100);
         final DateTimePicker newDate = new DateTimePicker();
-        final HBox tryDate = new HBox(newDate);
-        tryDate.setMaxWidth(100);
+        final HBox trqansactionDate = new HBox(newDate);
+        trqansactionDate.setMaxWidth(100);
         HBox hbox = null;
         HBox buttons = null;
         if (type == 1) {
-            hbox = new HBox(name, tryDate, importo);
+            hbox = new HBox(name, trqansactionDate, importo);
             buttons = new HBox(button);
         } else if (type == 2) {
-            hbox = new HBox(name, tryDate, importo, currency);
+            hbox = new HBox(name, trqansactionDate, importo, currencyValue);
             buttons = new HBox(button);
         } else if (type == 3) {
-            hbox = new HBox(name, assetChoiser, tryDate, importo);
-            buttons = new HBox(addAsset, button);
-            addAsset.setOnAction(event -> {
+            hbox = new HBox(name, assetChooser, trqansactionDate, importo);
+            buttons = new HBox(addAssetButton, button);
+            addAssetButton.setOnAction(event -> {
                 set = 1;
                 updateRight();
             });
         }
         hbox.setMaxWidth(450);
         if(set == 1) {
-            hbox = new HBox(name, tryDate, importo);
+            hbox = new HBox(name, trqansactionDate, importo);
             buttons = new HBox(nameNewAsset, symbolNewAsset, button);
         }
         button.setOnAction(event -> {
             final String datetime = newDate.getDateTimeValue().format(DATATIME);
-            String nameAsset = assetChoiser.getValue();
             String nameTransaction = name.getText();
-            double amount  = importo.getNumber().doubleValue();
+            double amount = importo.getNumber().doubleValue();
+            
             if (set == 0) {
-                if (type==1) {
-                    OperationJsonFile.newTransaction(selectedUser.getUsername(), tableName, 
-                            nameTransaction, amount, datetime.substring(0, 10), datetime.substring(11));
-                    selectedUser = OperationJsonFile.readUser(selectedUser.getUsername());
-                    for (final BankAccountJson bank : selectedUser.getBanks()) {
-                        if (tableName.equals(bank.getName())) {
-                            transactionTable = bank.getTransactions();
-                        }
-                        if (bankName.equals(bank.getName())) {
-                            transactionChart = bank.getTransactions();
-                        }
-                    }
+                if (type == 1) {
+                    performBankTransaction(nameTransaction, amount, datetime);
+                } else if (type == 2) {
+                    String currency = currencyValue.getText();
+                    performMoneyboxTransaction(nameTransaction, currency, amount, datetime);
+                } else if (type == 3) {
+                    String assetName = assetChooser.getValue();
+                    performAssetTransaction(nameTransaction, assetName, amount, datetime);
                 }
-                if (type==2) {
-                    OperationJsonFile.newTransaction(selectedUser.getUsername(), tableName, 
-                            nameTransaction, currency.getText(), amount, datetime.substring(0, 10),
-                            datetime.substring(11));
-                    selectedUser = OperationJsonFile.readUser(selectedUser.getUsername());
-                    for (final MoneyboxAccountJson box: selectedUser.getMoneyboxes()) {
-                        if (tableName.equals(box.getName())) {
-                            transactionTable = box.getTransactions();
-                        }
-                    }
-                }
-                if (type==3) {
-                    OperationJsonFile.newTransactionAsset(selectedUser.getUsername(), tableName, 
-                            nameTransaction, assetChoiser.getValue(), amount, datetime.substring(0, 10), 
-                            datetime.substring(11));
-                    for (final InvestmentAccountJson inv: selectedUser.getInvestmentAccounts()) {
-                        selectedUser = OperationJsonFile.readUser(selectedUser.getUsername());
-                        if (tableName.equals(inv.getNameInvestmentAccount())) {
-                            transactionTable.clear();
-                            for (final AssetJson asset : inv.getAssets()) {
-                                transactionTable.addAll(asset.getTransactions());
-                            }
-                        }
-                    }
-                }
-            } else if (set == 1) {
-                if (type==3) {
-                    OperationJsonFile.newAsset(selectedUser.getUsername(), tableName, 
-                            nameNewAsset.getText(), symbolNewAsset.getText());
-                    OperationJsonFile.newTransactionAsset(selectedUser.getUsername(), tableName, 
-                            nameTransaction, symbolNewAsset.getText(), amount, datetime.substring(0, 10), 
-                            datetime.substring(11));
-                    for (final InvestmentAccountJson inv: selectedUser.getInvestmentAccounts()) {
-                        selectedUser = OperationJsonFile.readUser(selectedUser.getUsername());
-                        if (tableName.equals(inv.getNameInvestmentAccount())) {
-                            transactionTable.clear();
-                            for (final AssetJson asset : inv.getAssets()) {
-                                transactionTable.addAll(asset.getTransactions());
-                            }
-                        }
-                    }
-                }
+            } else if (set == 1 && type == 3) {
+                String assetName = nameNewAsset.getText();
+                String symbol = symbolNewAsset.getText();
+                performAssetCreationAndTransaction(assetName, symbol, nameTransaction, amount, datetime);
+                set = 0;
             }
-            set = 0;
+
             updateCenter();
             updateLeft();
             updateRight();
         });
-        rightLayout.getChildren().addAll(text, tableView, hbox, buttons);
-        this.root.setRight(rightLayout);
+        
+        return new HBox(hbox,buttons);
+    }
+
+    @Override
+    protected void updateRight() {
+        final Text text = new Text();
+        text.setText(tableName);
+        text.setFont(Font.font("Arial", FontWeight.BOLD, 20));
+        final Pane rightLayout = getGadgets().createVerticalPanel();
+        TableView<main.jsonfile.TransactionJson> tableView = createTransactionTableView();
+        Button addAssetButton = createAddAssetButton();
+        HBox tableButtons = createTableButtons(addAssetButton);
+        Platform.runLater(() -> {
+            ObservableList<Node> children = tableButtons.getChildren();
+            Node compilingElement = children.get(0); // Accesses the first element in tableButtons
+            Node addingElement = children.get(1); // Accesses the second element in tableButtons
+            tableButtons.setMaxWidth(450);
+            rightLayout.getChildren().clear(); 
+            rightLayout.getChildren().addAll(text, tableView, compilingElement, addingElement);
+            this.root.setRight(rightLayout);
+        });
     }
 }
