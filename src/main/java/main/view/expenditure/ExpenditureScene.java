@@ -305,7 +305,6 @@ public class ExpenditureScene extends BaseScene{
     @SuppressWarnings("unchecked")
     @Override
     protected void updateCenter() {
-        
         PieChart pie = null;
         
         try {
@@ -388,22 +387,43 @@ public class ExpenditureScene extends BaseScene{
 
     private void updateTransactionTables() {
         selectedUser = OperationJsonFile.readUser(selectedUser.getUsername());
-        for (final BankAccountJson bank : selectedUser.getBanks()) {
-            if (tableName.equals(bank.getName())) {
-                transactionTable = bank.getTransactions();
+        transactionTable.clear();
+        if(type == 1) {
+            for (final BankAccountJson bank : selectedUser.getBanks()) {
+                if (tableName.equals(bank.getName())) {
+                    transactionTable = bank.getTransactions();
+                }
+                if (bankName.equals(bank.getName())) {
+                    transactionChart = bank.getTransactions();
+                }
             }
-            if (bankName.equals(bank.getName())) {
-                transactionChart = bank.getTransactions();
+        }
+        if(type == 2) {
+            for (final MoneyboxAccountJson box: selectedUser.getMoneyboxes()) {
+                if (tableName.equals(box.getName())) {
+                    transactionTable = box.getTransactions();
+                }
+            }
+        }
+        if(type == 3) {
+            for (final InvestmentAccountJson inv: selectedUser.getInvestmentAccounts()) {
+                selectedUser = OperationJsonFile.readUser(selectedUser.getUsername());
+                if (tableName.equals(inv.getNameInvestmentAccount())) {
+                    for (final AssetJson asset : inv.getAssets()) {
+                        transactionTable.addAll(asset.getTransactions());
+                    }
+                }
             }
         }
     }
 
     private void performAssetCreationAndTransaction(String assetName, String symbol, String nameTransaction, double amount, String datetime) {
-        OperationJsonFile.newAsset(selectedUser.getUsername(), tableName, assetName, symbol);
+        OperationJsonFile.newAsset(selectedUser.getUsername(), tableName, symbol, assetName);
         performAssetTransaction(nameTransaction, symbol, amount, datetime);
     }
 
     private TableView<main.jsonfile.TransactionJson> createTransactionTableView() {
+        updateTransactionTables();
         try {
             return TableBuilder.buildTableList(transactionTable, firstDate, secondDate);
         } catch (ParseException e) {
@@ -412,21 +432,19 @@ public class ExpenditureScene extends BaseScene{
         }
     }
     
-    private Button createAddAssetButton() {
-        Button addAsset = null;
+    private void populateAssetChooser() {
         assetChooser.getItems().clear();
         for (final InvestmentAccountJson inv: selectedUser.getInvestmentAccounts()) {
             if (tableName.equals(inv.getNameInvestmentAccount())) {
                 for (final AssetJson asset : inv.getAssets()) {
                     assetChooser.getItems().add(asset.getAssetSymbol());
                 }
-                addAsset = new Button("Aggiungi Asset");
             }
         }
-        return addAsset;
     }
     
-    private HBox createTableButtons(Button addAssetButton) {
+    private HBox createTableButtons() {
+        Button addAssetButton = new Button("Aggiungi Asset");
         final TextField name = new TextField("nome transazione");
         final NumberTextField importo = new NumberTextField();
         final TextField currencyValue = new TextField("valuta");
@@ -448,6 +466,7 @@ public class ExpenditureScene extends BaseScene{
             hbox = new HBox(name, trqansactionDate, importo, currencyValue);
             buttons = new HBox(button);
         } else if (type == 3) {
+            populateAssetChooser();
             hbox = new HBox(name, assetChooser, trqansactionDate, importo);
             buttons = new HBox(addAssetButton, button);
             addAssetButton.setOnAction(event -> {
@@ -492,21 +511,20 @@ public class ExpenditureScene extends BaseScene{
 
     @Override
     protected void updateRight() {
+        System.out.println("Updating right call");
         final Text text = new Text();
         text.setText(tableName);
         text.setFont(Font.font("Arial", FontWeight.BOLD, 20));
         final Pane rightLayout = getGadgets().createVerticalPanel();
         TableView<main.jsonfile.TransactionJson> tableView = createTransactionTableView();
-        Button addAssetButton = createAddAssetButton();
-        HBox tableButtons = createTableButtons(addAssetButton);
-        Platform.runLater(() -> {
-            ObservableList<Node> children = tableButtons.getChildren();
-            Node compilingElement = children.get(0); // Accesses the first element in tableButtons
-            Node addingElement = children.get(1); // Accesses the second element in tableButtons
-            tableButtons.setMaxWidth(450);
-            rightLayout.getChildren().clear(); 
-            rightLayout.getChildren().addAll(text, tableView, compilingElement, addingElement);
-            this.root.setRight(rightLayout);
-        });
+        //Button addAssetButton = createAddAssetButton();
+        HBox tableButtons = createTableButtons();
+        ObservableList<Node> children = tableButtons.getChildren();
+        Node compilingElement = children.get(0); // Accesses the first element in tableButtons
+        Node addingElement = children.get(1); // Accesses the second element in tableButtons
+        tableButtons.setMaxWidth(450);
+        rightLayout.getChildren().clear(); 
+        rightLayout.getChildren().addAll(text, tableView, compilingElement, addingElement);
+        this.root.setRight(rightLayout);
     }
 }
