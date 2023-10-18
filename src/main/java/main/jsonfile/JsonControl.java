@@ -1,148 +1,109 @@
 package main.jsonfile;
 
-import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 public class JsonControl {
-    protected static String dbName = "db.json";
+    protected static final Logger LOGGER = Logger.getLogger(JsonControl.class.getName());
+    protected static final String DB_NAME = "db.json";
+    protected static final String USERNAME_KEY = "username";
+    protected static final String PASSWORD_KEY = "password";
+    protected static final String ASSETS = "assets";
+    protected static final String SYMBOL_ASSET = "symbolAsset";
+    protected static final String[] MONEY_ACCOUNTS = {"banckAccounts", "moneyBoxes", "InvestimentAccounts"};
+    protected static final String[] ACCOUNT_NAMES = {"nameBanckAccount", "nameMoneyBox", "nameInvestimentAccount"};
 
-    /**
-     * this method return a boolean true if the searched username exist in the json file false otherwise
-     * 
-     * @param username it correspond at the username of the user, we notice the mistake 
-     * the username instead fc (fiscal code) too late for change, but the meaning doesn't change, both 
-     * username and fc has the same meaning to identify a only user 
-     * 
-     * @return boolean true if the searched username exist
-     * 
-     * */
-    
-    public static boolean userExist(final String username) {
-        final JSONParser parser = new JSONParser();
-
-        try {
-            // create jsonArray from file
-            final JSONArray users = (JSONArray) parser.parse(new FileReader(dbName));
-            // read user
-            for (final Object user : users) {
-                final JSONObject person = (JSONObject) user;
-                final String userName = (String) person.get("username");
-                if (userName.equals(username)) {
-                    return true;
-                }
-            }
-            return false;
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            return false;
+    private static JSONArray readJsonFile() throws Exception {
+        try (FileReader fileReader = new FileReader(DB_NAME)) {
+            JSONParser parser = new JSONParser();
+            return (JSONArray) parser.parse(fileReader);
         }
     }
 
-    protected static boolean userAccountExist(final String username, final String nameaccount, final int i) {
-
-        final JSONParser parser = new JSONParser();
-        final String[] moneyAccounts = {"banckAccounts", "moneyBoxes", "InvestimentAccounts"};
-        final String[] nameMoneyAccount = {"nameBanckAccount", "nameMoneyBox", "nameInvestimentAccount"};
-
-        try {
-            // create jsonArray from file
-            final JSONArray users = (JSONArray) parser.parse(new FileReader(dbName));
-            // read user
-            for (final Object user : users) {
-                final JSONObject person = (JSONObject) user;
-                final String userName = (String) person.get("username");
-
-                if (userName.equals(username)) {
-                    final JSONArray accounts = (JSONArray) person.get(moneyAccounts[i]);
-
-                    for (final Object c : accounts) {
-                        final JSONObject account = (JSONObject) c;
-                        final String nameAccount = (String) account.get(nameMoneyAccount[i]);
-
-                        if (nameAccount.equals(nameaccount)) {
-                            return true;
-                        }
-                    }
-                }
+    private static boolean checkUserProperty(JSONArray users, String username, String propertyName, String propertyValue) {
+        for (Object user : users) {
+            JSONObject person = (JSONObject) user;
+            String userUsername = (String) person.get(USERNAME_KEY);
+            String userPropertyValue = (String) person.get(propertyName);
+            if (userUsername.equals(username) && userPropertyValue.equals(propertyValue)) {
+                return true;
             }
-        } catch (Exception ex) {
-            ex.printStackTrace();
         }
         return false;
     }
 
-    protected static boolean userAccountAssetExist(final String username, final String nameInvestimentAccount, final String symbolAsset) {
-        final JSONParser parser = new JSONParser();
-
+    public static boolean userExist(String username) {
         try {
-            // create jsonArray from file
-            final JSONArray users = (JSONArray) parser.parse(new FileReader(dbName));
-            // read user
-            for (final Object user : users) {
-                final JSONObject person = (JSONObject) user;
-                final String userName = (String) person.get("username");
+            JSONArray users = readJsonFile();
+            return checkUserProperty(users, username, USERNAME_KEY, username);
+        } catch (Exception e) {
+            handleException("Error checking user existence", e);
+            return false;
+        }
+    }
 
-                if (userName.equals(username)) {
-                    final JSONArray accounts = (JSONArray) person.get("InvestimentAccounts");
+    protected static boolean userAccountExist(String username, String accountName, int accountTypeIndex) {
+        try {
+            JSONArray users = readJsonFile();
+            return checkUserProperty(users, username, MONEY_ACCOUNTS[accountTypeIndex], accountName);
+        } catch (Exception e) {
+            handleException("Error checking user account existence", e);
+            return false;
+        }
+    }
 
-                    for (final Object c : accounts) {
-                        final JSONObject account = (JSONObject) c;
-                        final String nameAccount = (String) account.get("nameInvestimentAccount");
+    protected static boolean userAccountAssetExist(String username, String investmentAccountName, String assetSymbol) {
+        try {
+            JSONArray users = readJsonFile();
+            return checkUserProperty(users, username, ACCOUNT_NAMES[2], investmentAccountName) &&
+                    checkAssetExist(users, username, investmentAccountName, assetSymbol);
+        } catch (Exception e) {
+            handleException("Error checking user account asset existence", e);
+            return false;
+        }
+    }
 
-                        if (nameAccount.equals(nameInvestimentAccount)) {
-                            final JSONArray assets = (JSONArray) account.get("assets");
-
-                            for (final Object a : assets) {
-                                final JSONObject asset = (JSONObject) a;
-                                final String symbol = (String) asset.get("symbolAsset");
-
-                                if (symbol.equals(symbolAsset)) {
-                                    return true;
-                                }
+    private static boolean checkAssetExist(JSONArray users, String username, String investmentAccountName, String assetSymbol) {
+        for (Object user : users) {
+            JSONObject person = (JSONObject) user;
+            String userUsername = (String) person.get(USERNAME_KEY);
+            if (userUsername.equals(username)) {
+                JSONArray investmentAccounts = (JSONArray) person.get(MONEY_ACCOUNTS[2]);
+                for (Object investmentAccount : investmentAccounts) {
+                    JSONObject account = (JSONObject) investmentAccount;
+                    String accountName = (String) account.get(ACCOUNT_NAMES[2]);
+                    if (accountName.equals(investmentAccountName)) {
+                        JSONArray assets = (JSONArray) account.get(ASSETS);
+                        for (Object asset : assets) {
+                            JSONObject assetObject = (JSONObject) asset;
+                            String symbol = (String) assetObject.get(SYMBOL_ASSET);
+                            if (symbol.equals(assetSymbol)) {
+                                return true;
                             }
                         }
                     }
                 }
             }
-        } catch (final Exception ex) {
-            ex.printStackTrace();
         }
         return false;
     }
 
-    public static final boolean userPasswordCheck(final String username, final String password) {
-        final JSONParser parser = new JSONParser();
-
+    public static boolean userPasswordCheck(String username, String password) {
         try {
-            // create jsonArray from file
-            final JSONArray users = (JSONArray) parser.parse(new FileReader(dbName));
-            // read user
-            for (final Object user : users) {
-                final JSONObject person = (JSONObject) user;
-                final String fc = (String) person.get("username");
-                final String psw = (String) person.get("password");
-
-                if (fc.equals(username) && psw.equals(password)) {
-                    return true;
-                }
-            }
-            return false;
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
+            JSONArray users = readJsonFile();
+            return checkUserProperty(users, username, PASSWORD_KEY, password);
+        } catch (Exception e) {
+            handleException("Error checking user password", e);
             return false;
         }
     }
-    
+
+    private static void handleException(String message, Exception e) {
+        LOGGER.log(Level.SEVERE, message + ": " + e.getMessage(), e);
+    }
 }

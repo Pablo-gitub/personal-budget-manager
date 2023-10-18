@@ -511,7 +511,6 @@ public class ExpenditureScene extends BaseScene{
 
     @Override
     protected void updateRight() {
-        System.out.println("Updating right call");
         final Text text = new Text();
         text.setText(tableName);
         text.setFont(Font.font("Arial", FontWeight.BOLD, 20));

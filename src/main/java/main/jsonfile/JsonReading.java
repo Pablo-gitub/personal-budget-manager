@@ -27,7 +27,7 @@ public class JsonReading extends JsonControl{
 
         try {
             // create jsonArray from file
-            final JSONArray users = (JSONArray) parser.parse(new FileReader(dbName));
+            final JSONArray users = (JSONArray) parser.parse(new FileReader(DB_NAME));
             // read user
             for (final Object user : users) {
                 final JSONObject person = (JSONObject) user;
@@ -87,7 +87,7 @@ public class JsonReading extends JsonControl{
 
         try {
             // create jsonArray from file
-            final JSONArray users = (JSONArray) parser.parse(new FileReader(dbName));
+            final JSONArray users = (JSONArray) parser.parse(new FileReader(DB_NAME));
             // read user
             for (final Object user : users) {
                 final JSONObject person = (JSONObject) user;
@@ -138,7 +138,7 @@ public class JsonReading extends JsonControl{
 
         try {
             // create jsonArray from file
-            final JSONArray users = (JSONArray) parser.parse(new FileReader(dbName));
+            final JSONArray users = (JSONArray) parser.parse(new FileReader(DB_NAME));
             // read user
             for (final Object user : users) {
                 final JSONObject person = (JSONObject) user;
@@ -179,7 +179,7 @@ public class JsonReading extends JsonControl{
 
         try {
             // create jsonArray from file
-            final JSONArray users = (JSONArray) parser.parse(new FileReader(dbName));
+            final JSONArray users = (JSONArray) parser.parse(new FileReader(DB_NAME));
             // read user
             for (final Object user : users) {
                 final JSONObject person = (JSONObject) user;
@@ -219,7 +219,7 @@ public class JsonReading extends JsonControl{
 
         try {
             // create jsonArray from file
-            final JSONArray users = (JSONArray) parser.parse(new FileReader(dbName));
+            final JSONArray users = (JSONArray) parser.parse(new FileReader(DB_NAME));
             // read user
             for (final Object user : users) {
                 final JSONObject person = (JSONObject) user;
@@ -260,7 +260,7 @@ public class JsonReading extends JsonControl{
 
         try {
             // create jsonArray from file
-            final JSONArray users = (JSONArray) parser.parse(new FileReader(dbName));
+            final JSONArray users = (JSONArray) parser.parse(new FileReader(DB_NAME));
             // read user
             for (final Object user : users) {
                 final JSONObject person = (JSONObject) user;
@@ -299,7 +299,7 @@ public class JsonReading extends JsonControl{
 
         try {
             // create jsonArray from file
-            final JSONArray users = (JSONArray) parser.parse(new FileReader(dbName));
+            final JSONArray users = (JSONArray) parser.parse(new FileReader(DB_NAME));
             // read user
             for (final Object user : users) {
                 final JSONObject person = (JSONObject) user;
@@ -360,7 +360,7 @@ public class JsonReading extends JsonControl{
         } else {
             try {
                 // create jsonArray from file
-                final JSONArray users = (JSONArray) parser.parse(new FileReader(dbName));
+                final JSONArray users = (JSONArray) parser.parse(new FileReader(DB_NAME));
                 // read user
                 for (final Object user : users) {
                     final JSONObject person = (JSONObject) user;
@@ -397,7 +397,7 @@ public class JsonReading extends JsonControl{
 
         try {
             // create jsonArray from file
-            final JSONArray users = (JSONArray) parser.parse(new FileReader(dbName));
+            final JSONArray users = (JSONArray) parser.parse(new FileReader(DB_NAME));
             // read user
             for (final Object user : users) {
                 final JSONObject person = (JSONObject) user;
