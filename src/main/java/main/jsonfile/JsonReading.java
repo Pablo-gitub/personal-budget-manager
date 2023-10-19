@@ -10,6 +10,23 @@ import org.json.simple.parser.JSONParser;
 
 public class JsonReading extends JsonControl{
     
+    protected static final String INVESTMENT_ACCOUNTS_KEY = "InvestimentAccounts";
+    protected static final String TRANSACTIONS = "transactions";
+    protected static final String NAME_ASSET = "nameAsset";
+    protected static final String EURO = "Euro";
+    protected static final String[] TRANSACTION_DATA = {"nameTransaction", "date", "time", "amount", "currency"};
+    protected static final String[] USER_DATA = {"name", "lastName", "email"};
+
+    private static JSONArray getUsersJsonArray() throws Exception {
+        JSONParser parser = new JSONParser();
+        return (JSONArray) parser.parse(new FileReader(DB_NAME));
+    }
+    
+    private static void handleException(String message, Exception ex) {
+        System.err.println(message);
+        ex.printStackTrace();
+    }
+    
     /**
      * this method read all the transaction of a specific asset in a specific investment account 
      * in the file json and put them in a array of TranssactionJson
@@ -21,42 +38,28 @@ public class JsonReading extends JsonControl{
      * 
      * */
     public List<TransactionJson> readAssetTransactions(final String username, 
-            final String nameInvestimentAccount, final String symbolAsset) {
-        final List<TransactionJson> listTransactions = new ArrayList<>(); 
-        final JSONParser parser = new JSONParser();
-
+            final String nameInvestmentAccount, final String symbolAsset) {
+        List<TransactionJson> transactions = new ArrayList<>();
         try {
-            // create jsonArray from file
-            final JSONArray users = (JSONArray) parser.parse(new FileReader(DB_NAME));
-            // read user
-            for (final Object user : users) {
-                final JSONObject person = (JSONObject) user;
-                final String userName = (String) person.get("username");
-
+            JSONArray users = getUsersJsonArray();
+            for (Object user : users) {
+                JSONObject person = (JSONObject) user;
+                String userName = (String) person.get(USERNAME_KEY);
                 if (userName.equals(username)) {
-                    final JSONArray investimentAccounts = (JSONArray) person.get("InvestimentAccounts");
-
-                    for (final Object a : investimentAccounts) {
-                        final JSONObject investimentAccount = (JSONObject) a;
-                        final String nameInvAcc = (String) investimentAccount.get("nameInvestimentAccount");
-
-                        if (nameInvAcc.equals(nameInvestimentAccount)) {
-                            final JSONArray assets = (JSONArray) investimentAccount.get("assets");
-
-                            for (final Object as : assets) {
-                                final JSONObject asset = (JSONObject) as;
-                                final String assetSymbol = (String) asset.get("symbolAsset");
-
+                    JSONArray investmentAccounts = (JSONArray) person.get(INVESTMENT_ACCOUNTS_KEY);
+                    for (Object account : investmentAccounts) {
+                        JSONObject investmentAccount = (JSONObject) account;
+                        String accountName = (String) investmentAccount.get(ACCOUNT_NAMES[2]);
+                        if (accountName.equals(nameInvestmentAccount)) {
+                            JSONArray assets = (JSONArray) investmentAccount.get(ASSETS);
+                            for (Object asset : assets) {
+                                JSONObject assetObject = (JSONObject) asset;
+                                String assetSymbol = (String) assetObject.get(SYMBOL_ASSET);
                                 if (assetSymbol.equals(symbolAsset)) {
-                                    final JSONArray transactions = (JSONArray) asset.get("transactions");
-
-                                    for (final Object tr : transactions) {
-                                        final JSONObject transaction = (JSONObject) tr;
-                                        final TransactionJson element = new TransactionJson(
-                                                (String) transaction.get("nameTransaction"), (String) transaction.get("date"),
-                                                (String) transaction.get("time"), ((Number) transaction.get("amount")).doubleValue(), 
-                                                (String) asset.get("symbolAsset"));
-                                        listTransactions.add(element);
+                                    JSONArray assetTransactions = (JSONArray) assetObject.get(TRANSACTIONS);
+                                    for (Object transaction : assetTransactions) {
+                                        JSONObject transactionObject = (JSONObject) transaction;
+                                        transactions.add(parseTransaction(transactionObject, assetSymbol));
                                     }
                                 }
                             }
@@ -65,10 +68,33 @@ public class JsonReading extends JsonControl{
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            handleException("Error reading asset transactions", ex);
         }
-        return listTransactions;
+        return transactions;
     }
+    
+    // Helper method to parse transaction JSON object into TransactionJson instance
+    private static TransactionJson parseTransaction(JSONObject transactionObject, String currency) {
+        return new TransactionJson(
+                (String) transactionObject.get(TRANSACTION_DATA[0]),
+                (String) transactionObject.get(TRANSACTION_DATA[1]),
+                (String) transactionObject.get(TRANSACTION_DATA[2]),
+                ((Number) transactionObject.get(TRANSACTION_DATA[3])).doubleValue(),
+                currency
+        );
+    }
+    
+    private static TransactionJson parseTransaction(JSONObject transactionObject) {
+        return new TransactionJson(
+                (String) transactionObject.get(TRANSACTION_DATA[0]),
+                (String) transactionObject.get(TRANSACTION_DATA[1]),
+                (String) transactionObject.get(TRANSACTION_DATA[2]),
+                ((Number) transactionObject.get(TRANSACTION_DATA[3])).doubleValue(),
+                (String) transactionObject.get(TRANSACTION_DATA[4])
+        );
+    }
+    
+    
 
     /**
      * this method read all the transaction of every asset in a specific investment account 
@@ -81,55 +107,43 @@ public class JsonReading extends JsonControl{
      * 
      * */
 
-    public static List<AssetJson> readAssetsTransactions(final String username, final String nameInvestimentAccount) {
-        final List<AssetJson> listAssetsTransactions = new ArrayList<>(); 
-        final JSONParser parser = new JSONParser();
-
+    public static List<AssetJson> readAssetsTransactions(final String username, final String nameInvestmentAccount) {
+        List<AssetJson> assetsTransactions = new ArrayList<>();
         try {
-            // create jsonArray from file
-            final JSONArray users = (JSONArray) parser.parse(new FileReader(DB_NAME));
-            // read user
-            for (final Object user : users) {
-                final JSONObject person = (JSONObject) user;
-                final String userName = (String) person.get("username");
-
+            JSONArray users = getUsersJsonArray();
+            for (Object user : users) {
+                JSONObject person = (JSONObject) user;
+                String userName = (String) person.get(USERNAME_KEY);
                 if (userName.equals(username)) {
-                    final JSONArray investimentAccounts = (JSONArray) person.get("InvestimentAccounts");
-
-                    for (final Object a : investimentAccounts) {
-                        final JSONObject investimentAccount = (JSONObject) a;
-                        final String nameInvAcc = (String) investimentAccount.get("nameInvestimentAccount");
-
-                        if (nameInvAcc.equals(nameInvestimentAccount)) {
-                            final JSONArray assets = (JSONArray) investimentAccount.get("assets");
-
-                            for (final Object as: assets) {
-                                final JSONObject asset = (JSONObject) as;
-                                final String assetSymbol = (String) asset.get("symbolAsset");
-                                final String assetName = (String) asset.get("nameAsset");
-                                final AssetJson token;
-                                final List<TransactionJson> assetTransactions = new ArrayList<TransactionJson>();
-                                final JSONArray transactions = (JSONArray) asset.get("transactions");
-
-                                for (final Object tr: transactions) {
-                                    final JSONObject transaction = (JSONObject) tr;
-                                    final TransactionJson element = new TransactionJson(
-                                            (String) transaction.get("nameTransaction"), (String) transaction.get("date"),
-                                            (String) transaction.get("time"), ((Number) transaction.get("amount")).doubleValue(), 
-                                            assetSymbol);
-                                    assetTransactions.add(element);
-                                }
-                                token = new AssetJson(assetName, assetSymbol, assetTransactions);
-                                listAssetsTransactions.add(token);
+                    JSONArray investmentAccounts = (JSONArray) person.get(INVESTMENT_ACCOUNTS_KEY);
+                    for (Object account : investmentAccounts) {
+                        JSONObject investmentAccount = (JSONObject) account;
+                        String accountName = (String) investmentAccount.get(ACCOUNT_NAMES[2]);
+                        if (accountName.equals(nameInvestmentAccount)) {
+                            JSONArray assets = (JSONArray) investmentAccount.get(ASSETS);
+                            for (Object asset : assets) {
+                                assetsTransactions.add(parseAssetJson((JSONObject) asset));
                             }
                         }
                     }
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            handleException("Error reading assets transactions", ex);
         }
-        return listAssetsTransactions;
+        return assetsTransactions;
+    }
+    
+    // Helper method to parse asset JSON object into AssetJson instance
+    private static AssetJson parseAssetJson(JSONObject assetObject) {
+        String assetName = (String) assetObject.get(NAME_ASSET);
+        String assetSymbol = (String) assetObject.get(SYMBOL_ASSET);
+        List<TransactionJson> transactions = new ArrayList<>();
+        JSONArray assetTransactions = (JSONArray) assetObject.get(TRANSACTIONS);
+        for (Object transaction : assetTransactions) {
+            transactions.add(parseTransaction((JSONObject) transaction, assetSymbol));
+        }
+        return new AssetJson(assetName, assetSymbol, transactions);
     }
 
     public final static List<InvestmentAccountJson> readInvestmentAccount(final String username) {
@@ -142,14 +156,14 @@ public class JsonReading extends JsonControl{
             // read user
             for (final Object user : users) {
                 final JSONObject person = (JSONObject) user;
-                final String userName = (String) person.get("username");
+                final String userName = (String) person.get(USERNAME_KEY);
 
                 if (userName.equals(username)) {
-                    final JSONArray investimentAccounts = (JSONArray) person.get("InvestimentAccounts");
+                    final JSONArray investimentAccounts = (JSONArray) person.get(MONEY_ACCOUNTS[2]);
 
                     for (final Object a : investimentAccounts) {
                         final JSONObject investimentAccount = (JSONObject) a;
-                        final String nameInvAcc = (String) investimentAccount.get("nameInvestimentAccount");
+                        final String nameInvAcc = (String) investimentAccount.get(ACCOUNT_NAMES[2]);
                         final InvestmentAccountJson account = new InvestmentAccountJson();
                         account.setNameInvestmentAccount(nameInvAcc);
                         account.setAssets(readAssetsTransactions(username, nameInvAcc));
@@ -174,43 +188,30 @@ public class JsonReading extends JsonControl{
 
 
     public static List<TransactionJson> readMoneyBoxTransaction(final String username, final String nameMoneyBox) {
-        final List<TransactionJson> listTransactions = new ArrayList<>();
-        final JSONParser parser = new JSONParser();
-
+        List<TransactionJson> transactions = new ArrayList<>();
         try {
-            // create jsonArray from file
-            final JSONArray users = (JSONArray) parser.parse(new FileReader(DB_NAME));
-            // read user
-            for (final Object user : users) {
-                final JSONObject person = (JSONObject) user;
-                final String userName = (String) person.get("username");
-
+            JSONArray users = getUsersJsonArray();
+            for (Object user : users) {
+                JSONObject person = (JSONObject) user;
+                String userName = (String) person.get(USERNAME_KEY);
                 if (userName.equals(username)) {
-                    final JSONArray moneyBoxes = (JSONArray) person.get("moneyBoxes");
-
-                    for (final Object a : moneyBoxes) {
-                        final JSONObject moneyBox = (JSONObject) a;
-                        final String nameBox = (String) moneyBox.get("nameMoneyBox");
-
-                        if (nameBox.equals(nameMoneyBox)) {
-                            final JSONArray transactions = (JSONArray) moneyBox.get("transactions");
-
-                            for (final Object tr: transactions) {
-                                final JSONObject transaction = (JSONObject) tr;
-                                final TransactionJson element = new TransactionJson(
-                                        (String) transaction.get("nameTransaction"), (String) transaction.get("date"),
-                                        (String) transaction.get("time"), ((Number) transaction.get("amount")).doubleValue(), 
-                                        (String) transaction.get("currency"));
-                                listTransactions.add(element);
+                    JSONArray moneyBoxes = (JSONArray) person.get(MONEY_ACCOUNTS[1]);
+                    for (Object moneyBox : moneyBoxes) {
+                        JSONObject moneyBoxObject = (JSONObject) moneyBox;
+                        String moneyBoxName = (String) moneyBoxObject.get(ACCOUNT_NAMES[1]);
+                        if (moneyBoxName.equals(nameMoneyBox)) {
+                            JSONArray moneyBoxTransactions = (JSONArray) moneyBoxObject.get(TRANSACTIONS);
+                            for (Object transaction : moneyBoxTransactions) {
+                                transactions.add(parseTransaction((JSONObject) transaction));
                             }
                         }
                     }
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            handleException("Error reading moneyBox transactions", ex);
         }
-        return listTransactions;
+        return transactions;
     }
 
     public final static List<MoneyboxAccountJson> readMoneyBoxes(final String username) {
@@ -223,14 +224,14 @@ public class JsonReading extends JsonControl{
             // read user
             for (final Object user : users) {
                 final JSONObject person = (JSONObject) user;
-                final String userName = (String) person.get("username");
+                final String userName = (String) person.get(USERNAME_KEY);
 
                 if (userName.equals(username)) {
-                    final JSONArray moneyBoxes = (JSONArray) person.get("moneyBoxes");
+                    final JSONArray moneyBoxes = (JSONArray) person.get(MONEY_ACCOUNTS[1]);
 
                     for (final Object a : moneyBoxes) {
                         final JSONObject moneyBox = (JSONObject) a;
-                        final String moneyBoxName = (String) moneyBox.get("nameMoneyBox");
+                        final String moneyBoxName = (String) moneyBox.get(ACCOUNT_NAMES[1]);
                         final MoneyboxAccountJson account = new MoneyboxAccountJson();
                         account.setName(moneyBoxName);
                         final List<TransactionJson> transactions = readMoneyBoxTransaction(username, moneyBoxName);
@@ -241,7 +242,7 @@ public class JsonReading extends JsonControl{
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            handleException("Error reading moneyBoxes", ex);
         }
         return listMoneyboxes;
     }
@@ -251,46 +252,34 @@ public class JsonReading extends JsonControl{
      * array of TranssactionJson
      * 
      * @param username the unique identifier of the user 
-     * @param nameBanckAccount the name of the bank account we want to read the transactions
+     * @param nameBankAccount the name of the bank account we want to read the transactions
      * @return the transactions related to a nameBankAccount
      * */
-    public static List<TransactionJson> readBankTransaction(final String username, final String nameBanckAccount) {
-        final List<TransactionJson> listTransactions = new ArrayList<>();
-        final JSONParser parser = new JSONParser();
-
+    public static List<TransactionJson> readBankTransaction(final String username, final String nameBankAccount) {
+        List<TransactionJson> transactions = new ArrayList<>();
         try {
-            // create jsonArray from file
-            final JSONArray users = (JSONArray) parser.parse(new FileReader(DB_NAME));
-            // read user
-            for (final Object user : users) {
-                final JSONObject person = (JSONObject) user;
-                final String userName = (String) person.get("username");
-
+            JSONArray users = getUsersJsonArray();
+            for (Object user : users) {
+                JSONObject person = (JSONObject) user;
+                String userName = (String) person.get(USERNAME_KEY);
                 if (userName.equals(username)) {
-                    final JSONArray banckAccounts = (JSONArray) person.get("banckAccounts");
-
-                    for (final Object a : banckAccounts) {
-                        final JSONObject banckAccount = (JSONObject) a;
-                        final String banckName = (String) banckAccount.get("nameBanckAccount");
-
-                        if (banckName.equals(nameBanckAccount)) {
-                            final JSONArray transactions = (JSONArray) banckAccount.get("transactions");
-
-                            for (final Object tr : transactions) {
-                                final JSONObject transaction = (JSONObject) tr;
-                                final TransactionJson element = new TransactionJson(
-                                        (String) transaction.get("nameTransaction"), (String) transaction.get("date"),
-                                        (String) transaction.get("time"), ((Number) transaction.get("amount")).doubleValue());
-                                listTransactions.add(element);
+                    JSONArray bankAccounts = (JSONArray) person.get(MONEY_ACCOUNTS[0]);
+                    for (Object bankAccount : bankAccounts) {
+                        JSONObject bankAccountObject = (JSONObject) bankAccount;
+                        String bankAccountName = (String) bankAccountObject.get(ACCOUNT_NAMES[0]);
+                        if (bankAccountName.equals(nameBankAccount)) {
+                            JSONArray bankAccountTransactions = (JSONArray) bankAccountObject.get(TRANSACTIONS);
+                            for (Object transaction : bankAccountTransactions) {
+                                transactions.add(parseTransaction((JSONObject) transaction, EURO));
                             }
                         }
                     }
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            handleException("Error reading bank account transactions", ex);
         }
-        return listTransactions;
+        return transactions;
     }
 
     public final static List<BankAccountJson> readBanks(final String username) {
@@ -303,14 +292,14 @@ public class JsonReading extends JsonControl{
             // read user
             for (final Object user : users) {
                 final JSONObject person = (JSONObject) user;
-                final String userName = (String) person.get("username");
+                final String userName = (String) person.get(USERNAME_KEY);
 
                 if (userName.equals(username)) {
-                    final JSONArray banckAccounts = (JSONArray) person.get("banckAccounts");
+                    final JSONArray banckAccounts = (JSONArray) person.get(MONEY_ACCOUNTS[0]);
 
                     for (final Object a : banckAccounts) {
                         final JSONObject banckAccount = (JSONObject) a;
-                        final String bankName = (String) banckAccount.get("nameBanckAccount");
+                        final String bankName = (String) banckAccount.get(ACCOUNT_NAMES[0]);
                         final BankAccountJson account = new BankAccountJson();
                         account.setName(bankName);
                         final List<TransactionJson> transactions = readBankTransaction(username, bankName);
@@ -321,7 +310,7 @@ public class JsonReading extends JsonControl{
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            handleException("Error reading banks", ex);
         }
         return listBanks;
     }
@@ -364,13 +353,13 @@ public class JsonReading extends JsonControl{
                 // read user
                 for (final Object user : users) {
                     final JSONObject person = (JSONObject) user;
-                    final String userName = (String) person.get("username");
+                    final String userName = (String) person.get(USERNAME_KEY);
 
                     if (userName.equals(username)) {
-                        name = (String) person.get("name");
-                        lastname = (String) person.get("lastName");
-                        email = (String) person.get("email");
-                        password = (String) person.get("password");
+                        name = (String) person.get(USER_DATA[0]);
+                        lastname = (String) person.get(USER_DATA[1]);
+                        email = (String) person.get(USER_DATA[2]);
+                        password = (String) person.get(PASSWORD_KEY);
                         banks = readBanks(userName);
                         moneyboxes = readMoneyBoxes(userName);
                         investmentAccounts = readInvestmentAccount(userName);
