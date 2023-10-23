@@ -1,21 +1,11 @@
 package main.jsonfile;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
-public class OperationJsonFile extends JsonWriting{
-
-    private static String dbName = "db.json";
+public class OperationJsonFile extends JsonWriting {
 
     // get a file from the resources folder
     // works everywhere, IDEA, unit test and JAR file.
