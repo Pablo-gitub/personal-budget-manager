@@ -1,21 +1,14 @@
 package main.jsonfile;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 
 
 public class JsonWriting extends JsonReading {
-    
+
     protected static void writeJsonFile(final JSONArray text) {
         try {
             // Writing to a file
@@ -29,7 +22,7 @@ public class JsonWriting extends JsonReading {
             ex.printStackTrace();
         }
     }
-    
+
     /**
      * this method initialize a new user it take from input:
      * 
@@ -45,23 +38,22 @@ public class JsonWriting extends JsonReading {
 
     @SuppressWarnings("unchecked")
     public static void initializeUser(final String name, final String lastName, final String username, final String email, final String password) {
-        final JSONParser parser = new JSONParser();
 
         if (!userExist(username)) {
             try {
                 // create jsonArray from file
-                final JSONArray users = (JSONArray) parser.parse(new FileReader(DB_NAME));
-                final JSONObject utente = new JSONObject();
-                utente.put("name", name);
-                utente.put("lastName", lastName);
-                utente.put("username", username);
-                utente.put("email", email);
-                utente.put("password", password);
+                final JSONArray users = readJsonFile();
+                final JSONObject user = new JSONObject();
+                user.put(USER_DATA[0], name);
+                user.put(USER_DATA[1], lastName);
+                user.put(USERNAME_KEY, username);
+                user.put(USER_DATA[2], email);
+                user.put(PASSWORD_KEY, password);
                 final JSONArray list = new JSONArray();
-                utente.put("banckAccounts", list);
-                utente.put("moneyBoxes", list);
-                utente.put("InvestimentAccounts", list);
-                users.add(utente);
+                user.put(MONEY_ACCOUNTS[0], list);
+                user.put(MONEY_ACCOUNTS[1], list);
+                user.put(MONEY_ACCOUNTS[2], list);
+                users.add(user);
                 // Writing to a file
                 writeJsonFile(users);
 
@@ -84,45 +76,37 @@ public class JsonWriting extends JsonReading {
      * */
     @SuppressWarnings("unchecked")
     public static void newAccount(final String username, final String nameAccount, final int type) {
-        int i = type;
-        if (i > 2) {
-            i = 2;
-        }
-        final JSONParser parser = new JSONParser();
-        final String[] moneyAccounts = {"banckAccounts", "moneyBoxes", "InvestimentAccounts"};
-        final String[] nameMoneyAccount = {"nameBanckAccount", "nameMoneyBox", "nameInvestimentAccount"};
+        final int i = Math.min(type, 2);  // Ensure i is between 0 and 2
 
         if (!userAccountExist(username, nameAccount, i)) {
-
             try {
                 // create jsonArray from file
-                final JSONArray users = (JSONArray) parser.parse(new FileReader(DB_NAME));
+                final JSONArray users = readJsonFile();
                 // read user
                 for (final Object user : users) {
-
                     final JSONObject person = (JSONObject) user;
-                    final String userName = (String) person.get("username");
+                    final String userName = (String) person.get(USERNAME_KEY);
 
                     if (userName.equals(username)) {
-
-                        final JSONArray accounts = (JSONArray) person.get(moneyAccounts[i]);
+                        final JSONArray accounts = (JSONArray) person.get(MONEY_ACCOUNTS[i]);
                         final JSONObject account = new JSONObject();
-                        account.put(nameMoneyAccount[i], nameAccount);
+                        account.put(ACCOUNT_NAMES[i], nameAccount);
                         final JSONArray list = new JSONArray();
+
                         if (i == 0 || i == 1) {
-                            account.put("transactions", list);
+                            account.put(TRANSACTIONS, list);
                         } else {
-                            account.put("assets", list);
+                            account.put(ASSETS, list);
                         }
 
                         accounts.addAll(Arrays.asList(account));
-                        person.put(moneyAccounts[i], accounts);
+                        person.put(MONEY_ACCOUNTS[i], accounts);
                         // Writing to file
                         writeJsonFile(users);
                     }
                 }
             } catch (Exception ex) {
-                ex.printStackTrace();
+                LOGGER.severe("Error creating new account: " + ex.getMessage());
             }
         }
     }
@@ -141,31 +125,29 @@ public class JsonWriting extends JsonReading {
      * */
     @SuppressWarnings("unchecked")
     public static void newAsset(final String username, final String nameInvestimentAccount, final String symbolAsset, final String nameAsset) {
-        final JSONParser parser = new JSONParser();
 
         if (!userAccountAssetExist(username, nameInvestimentAccount, symbolAsset)) {
             try {
                 // create jsonArray from file
-                final JSONArray users = (JSONArray) parser.parse(new FileReader(DB_NAME));
+                final JSONArray users = readJsonFile();
                 // read user
                 for (final Object user : users) {
                     final JSONObject person = (JSONObject) user;
                     final String userName = (String) person.get("username");
 
-                    if (userName.equals(username)) {    
+                    if (userName.equals(username)) {
                         final JSONArray investimentAccounts = (JSONArray) person.get("InvestimentAccounts");
-    
-                        for (final Object a : investimentAccounts) {
-                            final JSONObject investimentAccount = (JSONObject) a;
+
+                        for (final Object account : investimentAccounts) {
+                            final JSONObject investimentAccount = (JSONObject) account;
                             final String nameInvAcc = (String) investimentAccount.get("nameInvestimentAccount");
-    
+
                             if (nameInvAcc.equals(nameInvestimentAccount)) {
                                 final JSONArray assets = (JSONArray) investimentAccount.get("assets");
                                 final JSONObject asset = new JSONObject();
-                                asset.put("nameAsset", nameAsset);
-                                asset.put("symbolAsset", symbolAsset);
-                                final JSONArray list = new JSONArray();
-                                asset.put("transactions", list);
+                                asset.put(NAME_ASSET, nameAsset);
+                                asset.put(SYMBOL_ASSET, symbolAsset);
+                                asset.put(TRANSACTIONS, new JSONArray());
                                 assets.addAll(Arrays.asList(asset));
                                 investimentAccount.put("assets", assets);
                                 // Writing to file
@@ -175,8 +157,10 @@ public class JsonWriting extends JsonReading {
                     }
                 }
             } catch (Exception ex) {
-                ex.printStackTrace();
+                LOGGER.severe("Error occurred while adding asset: " + ex.getMessage());
             }
+        } else {
+            LOGGER.info("Asset already exists for the user and investment account.");
         }
     }
 
@@ -194,33 +178,27 @@ public class JsonWriting extends JsonReading {
     @SuppressWarnings("unchecked")
     public static void newTransaction(final String username, final String nameAccountTransaction, final String nameTransaction, 
             final double amount, final String date, final String time) {
-        final JSONParser parser = new JSONParser();
-
+        
         try {
             // create jsonArray from file
-            final JSONArray users = (JSONArray) parser.parse(new FileReader(DB_NAME));
+            final JSONArray users = readJsonFile();
             // read user
             for (final Object user : users) {
                 final JSONObject person = (JSONObject) user;
-                final String userName = (String) person.get("username");
+                final String userName = (String) person.get(USERNAME_KEY);
 
                 if (userName.equals(username)) {
-                    final JSONArray accounts = (JSONArray) person.get("banckAccounts");
+                    final JSONArray accounts = (JSONArray) person.get(MONEY_ACCOUNTS[0]);
 
                     for (final Object c : accounts) {
                         final JSONObject account = (JSONObject) c;
-                        final String nameAccount = (String) account.get("nameBanckAccount");
+                        final String nameAccount = (String) account.get(ACCOUNT_NAMES[0]);
 
                         if (nameAccount.equals(nameAccountTransaction)) {
-                            final JSONArray transactions = (JSONArray) account.get("transactions");
-                            final JSONObject transaction = new JSONObject();
-                            transaction.put("nameTransaction", nameTransaction);
-                            transaction.put("amount", amount);
-                            transaction.put("date", date);
-                            transaction.put("time", time);
-                            transaction.put("currency", "Euro");
+                            final JSONArray transactions = (JSONArray) account.get(TRANSACTIONS);
+                            final JSONObject transaction = createTransactionObject(nameTransaction, amount, date, time, EURO);
                             transactions.addAll(Arrays.asList(transaction));
-                            account.put("transactions", transactions);
+                            account.put(TRANSACTIONS, transactions);
                             // Writing to file
                             writeJsonFile(users);
                         }
@@ -228,7 +206,7 @@ public class JsonWriting extends JsonReading {
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            LOGGER.severe("Error occurred while adding bank transaction: " + ex.getMessage());
         }
     }
 
@@ -252,33 +230,26 @@ public class JsonWriting extends JsonReading {
     public static void newTransaction(final String username, final String nameAccountTransaction, final String nameTransaction, 
             final String symbolAsset, final double amount, final String date, final String time) {
 
-        final JSONParser parser = new JSONParser();
-
         try {
             // create jsonArray from file
-            final JSONArray users = (JSONArray) parser.parse(new FileReader(DB_NAME));
+            final JSONArray users = readJsonFile();
             // read user
             for (final Object user : users) {
                 final JSONObject person = (JSONObject) user;
-                final String userName = (String) person.get("username");
+                final String userName = (String) person.get(USERNAME_KEY);
 
                 if (userName.equals(username)) {
-                    final JSONArray accounts = (JSONArray) person.get("moneyBoxes");
+                    final JSONArray accounts = (JSONArray) person.get(MONEY_ACCOUNTS[1]);
 
                     for (final Object c : accounts) {
                         final JSONObject account = (JSONObject) c;
-                        final String nameAccount = (String) account.get("nameMoneyBox");
+                        final String nameAccount = (String) account.get(ACCOUNT_NAMES[1]);
 
                         if (nameAccount.equals(nameAccountTransaction)) {
                             final JSONArray transactions = (JSONArray) account.get("transactions");
-                            final JSONObject transaction = new JSONObject();
-                            transaction.put("nameTransaction", nameTransaction);
-                            transaction.put("amount", amount);
-                            transaction.put("date", date);
-                            transaction.put("time", time);
-                            transaction.put("currency", symbolAsset);
+                            final JSONObject transaction = createTransactionObject(nameTransaction, amount, date, time, symbolAsset);
                             transactions.addAll(Arrays.asList(transaction));
-                            account.put("transactions", transactions);
+                            account.put(TRANSACTIONS, transactions);
                             // Writing to file
                             writeJsonFile(users);
                         }
@@ -286,7 +257,7 @@ public class JsonWriting extends JsonReading {
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            LOGGER.severe("Error occurred while adding money box transaction: " + ex.getMessage());
         }
     }
 
@@ -307,41 +278,35 @@ public class JsonWriting extends JsonReading {
     public static void newTransactionAsset(final String username, final String nameAccountTransaction, 
             final String nameTransaction, final String symbolAsset, final double amount,
             final String date, final String time) {
-
-        final JSONParser parser = new JSONParser();
-
+        
         try {
             // create jsonArray from file
-            final JSONArray users = (JSONArray) parser.parse(new FileReader(DB_NAME));
+            final JSONArray users = readJsonFile();
             // read user
-            for (Object user : users) {
+            for (final Object user : users) {
                 final JSONObject person = (JSONObject) user;
-                final String userName = (String) person.get("username");
+                final String userName = (String) person.get(USERNAME_KEY);
 
                 if (userName.equals(username)) {
-                    final JSONArray accounts = (JSONArray) person.get("InvestimentAccounts");
+                    final JSONArray accounts = (JSONArray) person.get(MONEY_ACCOUNTS[2]);
 
                     for (final Object c : accounts) {
                         final JSONObject account = (JSONObject) c;
-                        final String nameAccount = (String) account.get("nameInvestimentAccount");
+                        final String nameAccount = (String) account.get(ACCOUNT_NAMES[2]);
 
                         if (nameAccount.equals(nameAccountTransaction)) {
-                            final JSONArray assets = (JSONArray) account.get("assets");
+                            final JSONArray assets = (JSONArray) account.get(ASSETS);
 
                             for (final Object a : assets) {
                                 final JSONObject asset = (JSONObject) a;
-                                final String symbol = (String) asset.get("symbolAsset");
+                                final String symbol = (String) asset.get(SYMBOL_ASSET);
 
                                 if (symbol.equals(symbolAsset)) {
 
-                                    final JSONArray transactions = (JSONArray) asset.get("transactions");
-                                    final JSONObject transaction = new JSONObject();
-                                    transaction.put("nameTransaction", nameTransaction);
-                                    transaction.put("amount", amount);
-                                    transaction.put("date", date);
-                                    transaction.put("time", time);
+                                    final JSONArray transactions = (JSONArray) asset.get(TRANSACTIONS);
+                                    final JSONObject transaction = createTransactionObject(nameTransaction, amount, date, time, symbolAsset);
                                     transactions.addAll(Arrays.asList(transaction));
-                                    asset.put("transactions", transactions);
+                                    asset.put(TRANSACTIONS, transactions);
                                     // Writing to file
                                     writeJsonFile(users);
                                 }
@@ -351,7 +316,18 @@ public class JsonWriting extends JsonReading {
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            LOGGER.severe("Error occurred while adding investment account transaction: " + ex.getMessage());
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static JSONObject createTransactionObject(final String nameTransaction, final double amount, final String date, final String time, final String currency) {
+        final JSONObject transaction = new JSONObject();
+        transaction.put(TRANSACTION_DATA[0], nameTransaction);
+        transaction.put(TRANSACTION_DATA[1], date);
+        transaction.put(TRANSACTION_DATA[2], time);
+        transaction.put(TRANSACTION_DATA[3], amount);
+        transaction.put(TRANSACTION_DATA[4], currency);
+        return transaction;
     }
 }

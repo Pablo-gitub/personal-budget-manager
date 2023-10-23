@@ -18,18 +18,18 @@ public class JsonControl {
     protected static final String[] MONEY_ACCOUNTS = {"banckAccounts", "moneyBoxes", "InvestimentAccounts"};
     protected static final String[] ACCOUNT_NAMES = {"nameBanckAccount", "nameMoneyBox", "nameInvestimentAccount"};
 
-    private static JSONArray readJsonFile() throws Exception {
+    protected static JSONArray readJsonFile() throws Exception {
         try (FileReader fileReader = new FileReader(DB_NAME)) {
-            JSONParser parser = new JSONParser();
+            final JSONParser parser = new JSONParser();
             return (JSONArray) parser.parse(fileReader);
         }
     }
 
-    private static boolean checkUserProperty(JSONArray users, String username, String propertyName, String propertyValue) {
-        for (Object user : users) {
-            JSONObject person = (JSONObject) user;
-            String userUsername = (String) person.get(USERNAME_KEY);
-            String userPropertyValue = (String) person.get(propertyName);
+    private static boolean checkUserProperty(final JSONArray users, final String username, final String propertyName, final String propertyValue) {
+        for (final Object user : users) {
+            final JSONObject person = (JSONObject) user;
+            final String userUsername = (String) person.get(USERNAME_KEY);
+            final String userPropertyValue = (String) person.get(propertyName);
             if (userUsername.equals(username) && userPropertyValue.equals(propertyValue)) {
                 return true;
             }
@@ -37,9 +37,9 @@ public class JsonControl {
         return false;
     }
 
-    public static boolean userExist(String username) {
+    public static boolean userExist(final String username) {
         try {
-            JSONArray users = readJsonFile();
+            final JSONArray users = readJsonFile();
             return checkUserProperty(users, username, USERNAME_KEY, username);
         } catch (Exception e) {
             handleException("Error checking user existence", e);
@@ -47,9 +47,9 @@ public class JsonControl {
         }
     }
 
-    protected static boolean userAccountExist(String username, String accountName, int accountTypeIndex) {
+    protected static boolean userAccountExist(final String username, final String accountName, final int accountTypeIndex) {
         try {
-            JSONArray users = readJsonFile();
+            final JSONArray users = readJsonFile();
             return checkUserProperty(users, username, MONEY_ACCOUNTS[accountTypeIndex], accountName);
         } catch (Exception e) {
             handleException("Error checking user account existence", e);
@@ -57,9 +57,9 @@ public class JsonControl {
         }
     }
 
-    protected static boolean userAccountAssetExist(String username, String investmentAccountName, String assetSymbol) {
+    protected static boolean userAccountAssetExist(final String username, final String investmentAccountName, final String assetSymbol) {
         try {
-            JSONArray users = readJsonFile();
+            final JSONArray users = readJsonFile();
             return checkUserProperty(users, username, ACCOUNT_NAMES[2], investmentAccountName) &&
                     checkAssetExist(users, username, investmentAccountName, assetSymbol);
         } catch (Exception e) {
@@ -68,20 +68,20 @@ public class JsonControl {
         }
     }
 
-    private static boolean checkAssetExist(JSONArray users, String username, String investmentAccountName, String assetSymbol) {
-        for (Object user : users) {
-            JSONObject person = (JSONObject) user;
-            String userUsername = (String) person.get(USERNAME_KEY);
+    private static boolean checkAssetExist(final JSONArray users, final String username, final String investmentAccountName, final String assetSymbol) {
+        for (final Object user : users) {
+            final JSONObject person = (JSONObject) user;
+            final String userUsername = (String) person.get(USERNAME_KEY);
             if (userUsername.equals(username)) {
-                JSONArray investmentAccounts = (JSONArray) person.get(MONEY_ACCOUNTS[2]);
-                for (Object investmentAccount : investmentAccounts) {
-                    JSONObject account = (JSONObject) investmentAccount;
-                    String accountName = (String) account.get(ACCOUNT_NAMES[2]);
+                final JSONArray investmentAccounts = (JSONArray) person.get(MONEY_ACCOUNTS[2]);
+                for (final Object investmentAccount : investmentAccounts) {
+                    final JSONObject account = (JSONObject) investmentAccount;
+                    final String accountName = (String) account.get(ACCOUNT_NAMES[2]);
                     if (accountName.equals(investmentAccountName)) {
-                        JSONArray assets = (JSONArray) account.get(ASSETS);
-                        for (Object asset : assets) {
-                            JSONObject assetObject = (JSONObject) asset;
-                            String symbol = (String) assetObject.get(SYMBOL_ASSET);
+                        final JSONArray assets = (JSONArray) account.get(ASSETS);
+                        for (final Object asset : assets) {
+                            final JSONObject assetObject = (JSONObject) asset;
+                            final String symbol = (String) assetObject.get(SYMBOL_ASSET);
                             if (symbol.equals(assetSymbol)) {
                                 return true;
                             }
@@ -93,9 +93,9 @@ public class JsonControl {
         return false;
     }
 
-    public static boolean userPasswordCheck(String username, String password) {
+    public static boolean userPasswordCheck(final String username, final String password) {
         try {
-            JSONArray users = readJsonFile();
+            final JSONArray users = readJsonFile();
             return checkUserProperty(users, username, PASSWORD_KEY, password);
         } catch (Exception e) {
             handleException("Error checking user password", e);
@@ -103,7 +103,7 @@ public class JsonControl {
         }
     }
 
-    private static void handleException(String message, Exception e) {
+    protected static void handleException(final String message, final Exception e) {
         LOGGER.log(Level.SEVERE, message + ": " + e.getMessage(), e);
     }
 }
