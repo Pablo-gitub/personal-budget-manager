@@ -1,6 +1,7 @@
 package main.jsonfile;
 
 import java.io.FileReader;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.json.simple.JSONArray;
@@ -36,6 +37,26 @@ public class JsonControl {
         }
         return false;
     }
+    
+    private static boolean checkUserAccount(final JSONArray users, final String username, final String propertyName, final String propertyValue) {
+        for (final Object user : users) {
+            final JSONObject person = (JSONObject) user;
+            final String userUsername = (String) person.get(USERNAME_KEY);
+            final JSONArray accounts = (JSONArray) person.get(propertyName);
+            if (userUsername.equals(username)) {
+                for (final var account : accounts) {
+                    final JSONObject tempAccount = (JSONObject) account;
+                    final int index = Arrays.binarySearch(MONEY_ACCOUNTS, propertyName);
+                    final String name = ACCOUNT_NAMES[index];
+                    final String tempName = (String) tempAccount.get(name);
+                    if (tempName.equals(propertyValue)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
 
     public static boolean userExist(final String username) {
         try {
@@ -50,7 +71,7 @@ public class JsonControl {
     protected static boolean userAccountExist(final String username, final String accountName, final int accountTypeIndex) {
         try {
             final JSONArray users = readJsonFile();
-            return checkUserProperty(users, username, MONEY_ACCOUNTS[accountTypeIndex], accountName);
+            return checkUserAccount(users, username, MONEY_ACCOUNTS[accountTypeIndex], accountName);
         } catch (Exception e) {
             handleException("Error checking user account existence", e);
             return false;

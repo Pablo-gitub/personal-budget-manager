@@ -13,7 +13,7 @@ public class TransactionJson {
         this.setNameTransaction(nameTransaction);
         this.setDate(date);
         this.setTime(time);
-        this.setCurrency("euro");
+        this.setCurrency("Euro");
     }
 
     public TransactionJson(final String nameTransaction, final String date, final String time, final double amount, final String currency) {
