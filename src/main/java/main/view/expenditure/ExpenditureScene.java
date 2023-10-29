@@ -62,7 +62,7 @@ public class ExpenditureScene extends BaseScene{
     private final DecimalFormat df = new DecimalFormat("###.##");
     private List<User> users = OperationJsonFile.readUsers();
     private User selectedUser;
-    private List<main.jsonfile.TransactionJson> transactionChart;
+    private List<main.jsonfile.TransactionJson> transactionChart = new ArrayList<>();
     private List<main.jsonfile.TransactionJson> transactionTable = new ArrayList<>();
     private String bankName;
     private String firstDate;
@@ -104,6 +104,7 @@ public class ExpenditureScene extends BaseScene{
         }
         final TextField password = new TextField("Password");
         final Button access = new Button("Accedi");
+        final Button logout = new Button("Logout");
         final Text userSelection = new Text();
         userSelection.setFont(Font.font("Arial", FontWeight.BOLD, 15));
         userSelection.setText("seleziona utente");
@@ -127,6 +128,8 @@ public class ExpenditureScene extends BaseScene{
                         }
                     }
                     updateBottom();
+                    access.setDisable(true);
+                    logout.setDisable(false);
                 });
             } else {
                 accountName.getItems().clear();
@@ -136,7 +139,29 @@ public class ExpenditureScene extends BaseScene{
                 setnewUser = 0;
             }
         });
-        return new HBox(userSelection, choiceUser, password, access);
+        
+        logout.setOnAction(event -> {
+            Platform.runLater(() -> {
+                access.setDisable(false);
+                logout.setDisable(true);
+                choiceUser.setValue(null);
+                password.clear();
+                accountName.getItems().clear();
+                accountNameTable.getItems().clear();
+                transactionChart.clear();
+                transactionTable.clear();
+                setnewUser = 0;
+                selectedUser = null;
+                updateTop();
+                updateBottom();
+                updateCenter();
+                updateLeft();
+                updateRight();
+            });
+        });
+     // Initially, disable the logout button
+        logout.setDisable(true);
+        return new HBox(userSelection, choiceUser, password, access,logout);
     }
     
     private HBox createNewUser() {
@@ -221,9 +246,9 @@ public class ExpenditureScene extends BaseScene{
         final HBox accountTypeTable = new HBox(accountNameTable);
         accountName.setOnAction((event) -> {
             final String selectedAccount = (String) accountName.getValue();
-
+            transactionTable = new ArrayList<>();
             for (final BankAccountJson bank : selectedUser.getBanks()) {
-                if (selectedAccount.equals(bank.getName())) {
+                if (selectedAccount != null && selectedAccount.equals(bank.getName())) {
                     transactionChart = bank.getTransactions();
                     bankName = selectedAccount;
                     Platform.runLater(() -> updateCenter());
@@ -235,8 +260,9 @@ public class ExpenditureScene extends BaseScene{
             final String selectedAccount = (String) accountNameTable.getValue();
             tableName = selectedAccount;
             set = 0;
+            transactionTable = new ArrayList<>();
             for (final BankAccountJson bank : selectedUser.getBanks()) {
-                if (selectedAccount.equals(bank.getName())) {
+                if (selectedAccount != null && selectedAccount.equals(bank.getName())) {
                     type = 1;
                     transactionTable = bank.getTransactions();
                     bankName = selectedAccount;
@@ -244,20 +270,20 @@ public class ExpenditureScene extends BaseScene{
                 }
             }
             for (final MoneyboxAccountJson box: selectedUser.getMoneyboxes()) {
-                if (selectedAccount.equals(box.getName())) {
+                if (selectedAccount != null && selectedAccount.equals(box.getName())) {
                     type = 2;
                     transactionTable = box.getTransactions();
                     Platform.runLater(() -> updateRight());
                 }
             }
             for (final InvestmentAccountJson inv: selectedUser.getInvestmentAccounts()) {
-                if (selectedAccount.equals(inv.getNameInvestmentAccount())) {
+                if (selectedAccount != null && selectedAccount.equals(inv.getNameInvestmentAccount())) {
                     transactionTable.clear();
                     type = 3;
                     for (final AssetJson asset : inv.getAssets()) {
                         transactionTable.addAll(asset.getTransactions());
-                        Platform.runLater(() -> updateRight());
                     }
+                    Platform.runLater(() -> updateRight());
                 }
             }
         });
@@ -307,7 +333,7 @@ public class ExpenditureScene extends BaseScene{
     @Override
     protected void updateCenter() {
         final Pane centerLayout = getGadgets().createVerticalPanel();
-        if (transactionChart != null && transactionChart.size() > 0) {
+        if (transactionChart != null && transactionChart.size() >= 0 && selectedUser != null) {
             PieChart pie = null;
             
             try {
@@ -343,7 +369,7 @@ public class ExpenditureScene extends BaseScene{
     @Override
     protected void updateLeft() {
         final Pane leftLayout = getGadgets().createVerticalPanel();
-        if (transactionChart != null && transactionChart.size() > 0) {
+        if (transactionChart != null && transactionChart.size() >= 0 && selectedUser != null) {
             AreaChart<String, Number> area = null;
             
             try {
@@ -404,29 +430,31 @@ public class ExpenditureScene extends BaseScene{
     private void updateTransactionTables() {
         selectedUser = OperationJsonFile.readUser(selectedUser.getUsername());
         transactionTable.clear();
-        if (type == 1) {
-            for (final BankAccountJson bank : selectedUser.getBanks()) {
-                if (bank != null && tableName.equals(bank.getName())) {
-                    transactionTable = bank.getTransactions();
-                }
-                if (bank != null && bankName.equals(bank.getName())) {
-                    transactionChart = bank.getTransactions();
-                }
-            }
-        }
-        if (type == 2) {
-            for (final MoneyboxAccountJson box: selectedUser.getMoneyboxes()) {
-                if (tableName.equals(box.getName())) {
-                    transactionTable = box.getTransactions();
+        if ( selectedUser != null) {
+            if (type == 1) {
+                for (final BankAccountJson bank : selectedUser.getBanks()) {
+                    if (bank != null && tableName.equals(bank.getName())) {
+                        transactionTable = bank.getTransactions();
+                    }
+                    if (bank != null && bankName.equals(bank.getName())) {
+                        transactionChart = bank.getTransactions();
+                    }
                 }
             }
-        }
-        if (type == 3) {
-            for (final InvestmentAccountJson inv: selectedUser.getInvestmentAccounts()) {
-                selectedUser = OperationJsonFile.readUser(selectedUser.getUsername());
-                if (tableName.equals(inv.getNameInvestmentAccount())) {
-                    for (final AssetJson asset : inv.getAssets()) {
-                        transactionTable.addAll(asset.getTransactions());
+            if (type == 2) {
+                for (final MoneyboxAccountJson box: selectedUser.getMoneyboxes()) {
+                    if (tableName.equals(box.getName())) {
+                        transactionTable = box.getTransactions();
+                    }
+                }
+            }
+            if (type == 3) {
+                for (final InvestmentAccountJson inv: selectedUser.getInvestmentAccounts()) {
+                    selectedUser = OperationJsonFile.readUser(selectedUser.getUsername());
+                    if (tableName.equals(inv.getNameInvestmentAccount())) {
+                        for (final AssetJson asset : inv.getAssets()) {
+                            transactionTable.addAll(asset.getTransactions());
+                        }
                     }
                 }
             }
@@ -573,7 +601,7 @@ public class ExpenditureScene extends BaseScene{
     @Override
     protected void updateRight() {
         final Pane rightLayout = getGadgets().createVerticalPanel();
-        if (transactionTable != null && transactionTable.size() > 0) {
+        if (transactionTable != null && transactionTable.size() >= 0 && selectedUser != null) {
             final Text text = new Text();
             text.setText(tableName);
             text.setFont(Font.font("Arial", FontWeight.BOLD, 20));
