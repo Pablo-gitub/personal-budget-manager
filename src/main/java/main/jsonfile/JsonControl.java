@@ -46,7 +46,7 @@ public class JsonControl {
             if (userUsername.equals(username)) {
                 for (final var account : accounts) {
                     final JSONObject tempAccount = (JSONObject) account;
-                    final int index = Arrays.binarySearch(MONEY_ACCOUNTS, propertyName);
+                    final int index = indexInArray(MONEY_ACCOUNTS, propertyName);
                     final String name = ACCOUNT_NAMES[index];
                     final String tempName = (String) tempAccount.get(name);
                     if (tempName.equals(propertyValue)) {
@@ -56,6 +56,17 @@ public class JsonControl {
             }
         }
         return false;
+    }
+    
+    private static <X> int indexInArray(final X[] array, final X element) {
+        int index = -1;
+        for (int i = 0; i < array.length; i++) {
+            if (array[i].equals(element)) {
+                index = i;
+                break;
+            }
+        }
+        return index;
     }
 
     public static boolean userExist(final String username) {
