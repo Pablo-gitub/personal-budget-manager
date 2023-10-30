@@ -28,11 +28,14 @@ public class JsonControl {
 
     private static boolean checkUserProperty(final JSONArray users, final String username, final String propertyName, final String propertyValue) {
         for (final Object user : users) {
-            final JSONObject person = (JSONObject) user;
-            final String userUsername = (String) person.get(USERNAME_KEY);
-            final String userPropertyValue = (String) person.get(propertyName);
-            if (userUsername.equals(username) && userPropertyValue.equals(propertyValue)) {
-                return true;
+            if (user != null) {
+                final JSONObject person = (JSONObject) user;
+                final String userUsername = (String) person.get(USERNAME_KEY);
+                final String userPropertyValue = (String) person.get(propertyName);
+                if (userUsername != null && userPropertyValue != null &&
+                        userUsername.equals(username) && userPropertyValue.equals(propertyValue)) {
+                    return true;
+                }
             }
         }
         return false;
