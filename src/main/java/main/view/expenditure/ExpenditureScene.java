@@ -202,7 +202,7 @@ public class ExpenditureScene extends BaseScene{
         return userNew;
     }
     
-    private HBox addNewUser() {
+    private HBox addNewAccount() {
         final ChoiceBox<String> typeOfTheNewAccount = new ChoiceBox<>();
         typeOfTheNewAccount.getItems().add("Bancario");
         typeOfTheNewAccount.getItems().add("Salvadanaio");
@@ -215,11 +215,14 @@ public class ExpenditureScene extends BaseScene{
             Platform.runLater(() -> {
                 if (typeOfTheNewAccount.getValue().equals("Bancario")) {
                     OperationJsonFile.newAccount(selectedUser.getUsername(), nameAccount.getText(), 0);
+                    accountName.getItems().add(nameAccount.getText());
                 } else if (typeOfTheNewAccount.getValue().equals("Salvadanaio")) {
                     OperationJsonFile.newAccount(selectedUser.getUsername(), nameAccount.getText(), 1);
                 } else if (typeOfTheNewAccount.getValue().equals("Investimento")) {
                     OperationJsonFile.newAccount(selectedUser.getUsername(), nameAccount.getText(), 2);
                 }
+                accountNameTable.getItems().add(nameAccount.getText());
+                selectedUser = OperationJsonFile.readUser(selectedUser.getUsername());
                 updateBottom();
             });
         });
@@ -232,7 +235,7 @@ public class ExpenditureScene extends BaseScene{
         final Pane topLayout = getGadgets().createVerticalPanel();
         final HBox userChoise = createUserSelection();
         final HBox userNew = createNewUser();
-        final HBox addUser = addNewUser();
+        final HBox addUser = addNewAccount();
         final Text newAccount = new Text();
         newAccount.setFont(Font.font("Arial", FontWeight.BOLD, 15));
         newAccount.setText("Apri nuovo conto");
